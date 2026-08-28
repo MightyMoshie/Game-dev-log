@@ -56,6 +56,8 @@ function paintTile(
   ctx.clip();
   ctx.fillStyle = tile.selected ? "#152038" : "#101828";
   ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = tile.side === "long" ? "#1f8a4c" : "#e31c3d";
+  ctx.fillRect(x, y, 28, h);
   ctx.lineWidth = tile.selected ? 6 : 3;
   ctx.strokeStyle = tile.selected ? "#f0b429" : "#3a4a6a";
   ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
@@ -63,11 +65,11 @@ function paintTile(
   const up = tile.pnl >= 0;
   ctx.fillStyle = "#8aa0c8";
   ctx.font = "800 18px Nunito, sans-serif";
-  ctx.fillText(tile.name.toUpperCase(), x + 16, y + 30);
+  ctx.fillText(tile.name.toUpperCase(), x + 38, y + 30);
 
-  ctx.fillStyle = tile.side === "long" ? "#3dd68c" : "#ff4d6d";
+  ctx.fillStyle = "#fff6e8";
   ctx.font = "900 22px Nunito, sans-serif";
-  ctx.fillText(tile.side === "long" ? "LONG" : "SHORT", x + 16, y + 56);
+  ctx.fillText(tile.side === "long" ? "LONG" : "SHORT", x + 38, y + 56);
 
   ctx.fillStyle = "#f0b429";
   ctx.font = "800 42px Bangers, Impact, sans-serif";
@@ -76,13 +78,13 @@ function paintTile(
   const pnlY = research ? y + 108 : y + 118;
   ctx.fillStyle = tile.yanked ? "#8aa0c8" : up ? "#3dd68c" : "#ff4d6d";
   ctx.font = research ? "800 52px 'JetBrains Mono', monospace" : "800 40px 'JetBrains Mono', monospace";
-  ctx.fillText(signedMoney(tile.pnl), x + 16, pnlY);
+  ctx.fillText(signedMoney(tile.pnl), x + 28, pnlY);
 
   ctx.fillStyle = "#8aa0c8";
   ctx.font = "800 16px 'JetBrains Mono', monospace";
-  ctx.fillText(tile.yanked ? "FLAT" : `BOOK ${Math.round(tile.notional).toLocaleString("en-US")}`, x + 16, pnlY + 24);
+  ctx.fillText(tile.yanked ? "FLAT" : `BOOK ${Math.round(tile.notional).toLocaleString("en-US")}`, x + 28, pnlY + 24);
 
-  spark(ctx, tile, x + 14, y + h - 78, w - 28, 58);
+  spark(ctx, tile, x + 28, y + h - 78, w - 42, 58);
 
   if (tile.yanked) {
     ctx.fillStyle = "rgba(12,20,40,0.45)";
