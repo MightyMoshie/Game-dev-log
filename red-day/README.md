@@ -26,7 +26,7 @@ npm run preview   # serve the build
 
 1. **Cold start** — optional desk name (default Paper Hands LLC).
 2. **Morning brief** — one headline + trainee hot take(s).
-3. **The Floor** — ~28s. A cute 9:16 office. Tape tank on the wall. Maya at a desk with a fishing line into the tank. Two actions: Let them ride / Yank.
+3. **The Floor** — a chunky isometric office that fills the phone. Tape lives in a fish tank on the back wall. Maya’s fishing rod is the silhouette. Let them ride / Yank.
 4. **Bell** — day’s P&L + roast card. Fake “Watch to replay the day” button (disabled).
 5. **Desk** — cash, roster. First real red day unlocks **Jules (seat 2)** and the Accountant. Next morning.
 

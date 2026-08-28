@@ -8,6 +8,7 @@ export function drawChart(
     entry: number;
     yankedAt: number | null;
     yanks?: { at: number; label: string; color: string }[];
+    embedded?: boolean;
     ink: string;
     paper: string;
     red: string;
@@ -28,15 +29,21 @@ export function drawChart(
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cssW, cssH);
 
-  // paper panel
-  roundRect(ctx, 0, 0, cssW, cssH, 16);
-  ctx.fillStyle = opts.paper;
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = opts.ink;
-  ctx.stroke();
+  if (opts.embedded) {
+    ctx.fillStyle = "#1a4a52";
+    ctx.fillRect(0, 0, cssW, cssH);
+  } else {
+    roundRect(ctx, 0, 0, cssW, cssH, 16);
+    ctx.fillStyle = opts.paper;
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = opts.ink;
+    ctx.stroke();
+  }
 
-  const pad = { l: 14, r: 52, t: 16, b: 18 };
+  const pad = opts.embedded
+    ? { l: 8, r: 36, t: 8, b: 8 }
+    : { l: 14, r: 52, t: 16, b: 18 };
   const vis = candles.slice(0, Math.max(1, revealed));
   let min = Math.min(opts.entry, ...vis.map((c) => c.l));
   let max = Math.max(opts.entry, ...vis.map((c) => c.h));

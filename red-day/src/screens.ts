@@ -73,33 +73,17 @@ export function briefScreen(save: DeskSave, day: PreparedDay): string {
 export function floorScreen(save: DeskSave, day: PreparedDay): string {
   return `
     <section class="screen floor">
-      <header class="floor-head">
-        <div>
-          <div class="clock-label">TAPE</div>
-          <div class="clock" id="clock">0:28</div>
-        </div>
-        <div class="ticker-block">
-          <div class="ticker" id="ticker">${escapeHtml(day.ticker)}</div>
-          <div class="desk-mini">${escapeHtml(save.deskName)}</div>
-        </div>
-        <div class="pnl-block">
-          <div class="clock-label">DESK P&amp;L</div>
-          <div class="live-pnl" id="live-pnl">$0</div>
-        </div>
-      </header>
       ${officeMarkup({
         seats: day.seats.map((s) => ({ id: s.id, name: s.name })),
         accountant: save.accountantHired,
         ticker: day.ticker,
       })}
-      <div class="bubble compact floor-bubble" id="bubble">
-        <p class="who" id="bubble-who">MAYA</p>
-        <p id="maya-line">Don’t you dare hover the yank. I can hear your finger.</p>
-      </div>
-      <div class="pos" id="pos">MAYA LONG · ${money(day.seats[0] ? save.cash * day.seats[0].size : 0)} · ${escapeHtml(day.ticker)}</div>
-      <div class="actions">
-        <button class="btn gold" data-act="ride" id="btn-ride">LET THEM RIDE</button>
-        <button class="btn danger" data-act="yank" id="btn-yank">YANK</button>
+      <div class="floor-dock">
+        <div class="pos" id="pos">MAYA SWIMMING · ${money(day.seats[0] ? save.cash * day.seats[0].size : 0)} · ${escapeHtml(day.ticker)}</div>
+        <div class="actions">
+          <button class="btn gold" data-act="ride" id="btn-ride">LET THEM RIDE</button>
+          <button class="btn danger" data-act="yank" id="btn-yank">YANK</button>
+        </div>
       </div>
     </section>
   `;

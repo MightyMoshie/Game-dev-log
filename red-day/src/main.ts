@@ -2,7 +2,7 @@ import "./style.css";
 import * as audio from "./audio";
 import { drawChart } from "./chart";
 import { BANKS, Talker, type SeatId } from "./quotes";
-import { paintSeat, poseFor, updateLines } from "./office";
+import { poseFor, setActorPose, splash, syncTankSlot, updateLines } from "./office";
 import {
   bellScreen,
   briefScreen,
@@ -57,6 +57,7 @@ class RedDay {
   private lastLineAt = 0;
   private lastTickCandle = -1;
   private lastHrAt = 0;
+  private lastYankId: string | null = null;
   private talkers = new Map<string, Talker>();
 
   constructor(root: HTMLElement) {
@@ -159,6 +160,7 @@ class RedDay {
     this.lastLineAt = 0;
     this.lastHrAt = 0;
     this.lastTickCandle = -1;
+    this.lastYankId = null;
     this.syncButtons();
     this.loop();
   }
@@ -202,6 +204,7 @@ class RedDay {
         entry: this.day.entry,
         yankedAt: null,
         yanks,
+        embedded: true,
         ink: INK,
         paper: PAPER,
         red: RED,
@@ -209,6 +212,7 @@ class RedDay {
         gold: GOLD,
       }).hook;
     }
+    syncTankSlot(this.root);
 
     const left = Math.max(0, Math.ceil((FLOOR_MS - elapsed) / 1000));
     const clock = this.root.querySelector("#clock");
@@ -231,7 +235,14 @@ class RedDay {
 
     for (const book of this.books) {
       const pnl = unrealized(this.day, book, index);
-      paintSeat(this.root, book, book.seatId === this.selected, signedMoney(pnl), poseFor(book));
+      setActorPose(
+        this.root,
+        book,
+        book.seatId === this.selected,
+        signedMoney(pnl),
+        poseFor(book),
+        this.lastYankId === book.seatId,
+      );
     }
     updateLines(this.root, this.books, this.selected, hook);
 
@@ -288,6 +299,8 @@ class RedDay {
     const index = Math.min(CANDLE_COUNT - 1, Math.floor((elapsed / FLOOR_MS) * CANDLE_COUNT));
     if (!tryYank(this.day, book, index)) return;
     audio.yank();
+    this.lastYankId = book.seatId;
+    splash(this.root);
     this.flashPos(`${book.name.toUpperCase()} REELED`);
     this.speak(book.seatId, "yank");
     const other = this.books.find((b) => b.seatId !== book.seatId && b.yankedAt == null);
