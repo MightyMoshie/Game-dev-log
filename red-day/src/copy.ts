@@ -1,9 +1,12 @@
+import type { SeatId } from "./quotes";
+
 export type Beat = "gap-up" | "dump" | "fakeout" | "squeeze" | "bleed";
 
 export interface BriefCopy {
   ticker: string;
   headline: string;
   mayaTake: string;
+  julesTake: string;
 }
 
 export const TICKERS = ["CHAI", "NBL", "BLND"] as const;
@@ -13,121 +16,67 @@ export const BRIEFS: BriefCopy[] = [
     ticker: "CHAI",
     headline: "CHAI gaps on a leaked Notes screenshot titled “alpha (do not share).”",
     mayaTake: "If you’re not sized, you’re not serious. I’m serious. I’m so serious.",
+    julesTake: "I put the gap in a sheet. The sheet says maybe. I’m still long.",
   },
   {
     ticker: "NBL",
     headline: "NBL “community” insists yesterday’s dump was a liquidity event for believers.",
     mayaTake: "My group chat just sent fourteen rockets. That’s due diligence.",
+    julesTake: "Believers aren’t a factor. I’m a factor. I’m also, unfortunately, long.",
   },
   {
     ticker: "BLND",
     headline: "BLND listed on a meme venue that definitely exists. Volume: vibes.",
     mayaTake: "I watched three recap videos. I am an expert now. Load it.",
+    julesTake: "Volume: vibes is not a number. I’m going to treat it like a number anyway.",
   },
   {
     ticker: "CHAI",
     headline: "Overnight: a guy named Braxton said CHAI is “so back it hurts.”",
     mayaTake: "Don’t fade this. I will personally be annoying if you fade this.",
+    julesTake: "Braxton is not in the model. The model is lonely. I’m in.",
   },
   {
     ticker: "NBL",
     headline: "Unverified “analyst” upgrades NBL from speculative to destiny.",
     mayaTake: "This is the one they write threads about. I can feel the thread.",
+    julesTake: "Destiny isn’t a rating. I’m tagging it as ‘speculative, annoying.’",
   },
   {
     ticker: "BLND",
     headline: "BLND opens after a 2am Space where nobody said a number, just “trust.”",
     mayaTake: "Stop looking with your eyes. Feel the tape. The tape owes me.",
+    julesTake: "Trust is not a cell I can format. Still. Line’s in.",
   },
   {
     ticker: "CHAI",
     headline: "CHAI holders posting “we risk-managed by not looking.”",
     mayaTake: "If it dips I’m adding. That’s called conviction, desk lead.",
+    julesTake: "Not looking is not a hedge. I looked. I hated it. I’m still here.",
   },
   {
     ticker: "NBL",
     headline: "Rumor mill: NBL “insiders” are three interns and a shared Spotify.",
     mayaTake: "Institutional. Basically. Spiritually. Anyway I’m long.",
+    julesTake: "Interns aren’t insiders. I would know. I am an intern. I’m long too.",
   },
 ];
-
-export type MayaMood = "hyped" | "sweat" | "mad" | "smug";
-
-export function mayaLine(
-  pnlPct: number,
-  yanked: boolean,
-  rode: boolean,
-  fomo: boolean,
-  moodHint?: MayaMood,
-): { text: string; mood: MayaMood } {
-  if (yanked) {
-    if (pnlPct > 0.04) {
-      return { text: "Okay. Fine. Maybe you’re useful. Don’t let it go to your head.", mood: "mad" };
-    }
-    if (pnlPct < -0.03) {
-      return { text: "WAIT I WAS ABOUT TO BE RIGHT. You yanked the bottom. Unreal.", mood: "mad" };
-    }
-    return { text: "Flattened. Coward speedrun. I respect the cowardice a tiny bit.", mood: "sweat" };
-  }
-  if (fomo) {
-    return { text: "Buying this dip with BOTH hands. Say nothing. Let me cook.", mood: "hyped" };
-  }
-  if (rode && pnlPct > 0) {
-    return { text: "SIZE. I knew you had taste. We are so ridiculously back.", mood: "hyped" };
-  }
-  if (rode && pnlPct < 0) {
-    return { text: "We added. That’s how winners get bigger. Ignore the red. It’s shy.", mood: "sweat" };
-  }
-  if (moodHint === "hyped" || pnlPct > 0.06) {
-    return pickLine(
-      [
-        "WE ARE SO BACK. Desk lead. Look at me. LOOK.",
-        "This is free. This is charity. Thank you tape.",
-        "I will not be humble about this. I refuse.",
-      ],
-      "hyped",
-    );
-  }
-  if (pnlPct < -0.1) {
-    return pickLine(
-      [
-        "Okay but if we sell we lock it in so we DON’T.",
-        "Thesis still intact. The thesis is vibes. Vibes are eternal.",
-        "This is where cowards leave. We are not cowards. Right?",
-      ],
-      "sweat",
-    );
-  }
-  if (pnlPct < -0.02) {
-    return pickLine(
-      [
-        "Healthy dip. They’re shaking us out. I will not be shaken.",
-        "Textbook accumulation if you squint and believe.",
-        "My cousin’s roommate is still long. That’s a signal.",
-      ],
-      "sweat",
-    );
-  }
-  return pickLine(
-    [
-      "Tape’s being weird on purpose. I speak weird.",
-      "Don’t you dare hover the yank. I can hear your finger.",
-      "Trust the process. The process is me. Hi.",
-    ],
-    "smug",
-  );
-}
-
-function pickLine(lines: string[], mood: MayaMood): { text: string; mood: MayaMood } {
-  const i = Math.abs(Math.floor(Date.now() / 2200)) % lines.length;
-  return { text: lines[i]!, mood };
-}
 
 export interface Roast {
   id: string;
   stamp: string;
   body: string;
   lesson: string;
+}
+
+export interface RoastLeg {
+  seatId: SeatId;
+  name: string;
+  pnl: number;
+  yanked: boolean;
+  rode: boolean;
+  fomo: boolean;
+  recoveredPct: number;
 }
 
 export function pickRoast(input: {
@@ -140,17 +89,24 @@ export function pickRoast(input: {
   fomo: boolean;
   recoveredPct: number;
   accountantHired: boolean;
+  legs?: RoastLeg[];
 }): Roast {
   const { pnl, cash, yanked, rode, fomo, recoveredPct, accountantHired } = input;
   void input.yankedAt;
   void input.candlesLeftAfterYankMove;
+  const legs = input.legs ?? [];
   const pctOfDesk = pnl / Math.max(cash, 1);
+
+  if (legs.length === 2) {
+    const two = twoSeatRoast(legs, cash, pnl, accountantHired);
+    if (two) return two;
+  }
 
   if (yanked && recoveredPct > 0.06) {
     return {
       id: "yanked_bottom",
       stamp: "YANKED THE BOTTOM",
-      body: "You flattened Maya at the exact moment the tape decided to be funny. She will mention this until the heat death of the group chat.",
+      body: "You reeled Maya at the exact moment the tape decided to be funny. She will mention this until the heat death of the group chat.",
       lesson: "Timing a yank is still a guess. You just guessed spicy.",
     };
   }
@@ -158,7 +114,7 @@ export function pickRoast(input: {
     return {
       id: "yolo_size",
       stamp: "LET HER YOLO SIZE",
-      body: "You let Maya press the big red feeling. Size turned a dip into a personality. The desk felt that one in its paper bones.",
+      body: "You let Maya press the big red feeling. Slack on the line turned a dip into a personality. The desk felt that one in its paper bones.",
       lesson: "FOMO size is how a bad day becomes a Red Day.",
     };
   }
@@ -166,7 +122,7 @@ export function pickRoast(input: {
     return {
       id: "held_loser",
       stamp: "HELD THE BAG",
-      body: "You froze. Maya rode a loser like it owed her rent. Survival is the tutorial. This was the quiz you didn’t know you sat.",
+      body: "You froze. Maya swam a loser like it owed her rent. Survival is the tutorial. This was the quiz you didn’t know you sat.",
       lesson: "Doing nothing is still a decision. Usually a sticky one.",
     };
   }
@@ -174,7 +130,7 @@ export function pickRoast(input: {
     return {
       id: "yanked_smart",
       stamp: "CUT THE BLEED",
-      body: "You yanked a loser before it could write a memoir. Maya called you a coward. The P&L called you a manager.",
+      body: "You reeled a loser before it could write a memoir. Maya called you a coward. The P&L called you a manager.",
       lesson: "Flattening is allowed. It’s the whole job, actually.",
     };
   }
@@ -190,7 +146,7 @@ export function pickRoast(input: {
     return {
       id: "lucky_hold",
       stamp: "GOT AWAY WITH IT",
-      body: "You let her ride and the tape paid you for the bit. Do not confuse luck with a process. She already did.",
+      body: "You left the line slack and the tape paid you for the bit. Do not confuse luck with a process. She already did.",
       lesson: "Winning on vibes prints confidence. Confidence prints the next hole.",
     };
   }
@@ -224,6 +180,68 @@ export function pickRoast(input: {
     body: "Green tape, fragile ego, fictional ticker. Take the win off the table and do not let Maya name a yacht.",
     lesson: "Bank the day. Tomorrow she will try again.",
   };
+}
+
+function twoSeatRoast(
+  legs: RoastLeg[],
+  cash: number,
+  pnl: number,
+  accountantHired: boolean,
+): Roast | null {
+  const yanked = legs.filter((l) => l.yanked);
+  const swimming = legs.filter((l) => !l.yanked);
+  const [a, b] = legs;
+  if (!a || !b) return null;
+
+  if (yanked.length === 1 && swimming.length === 1) {
+    const pulled = yanked[0]!;
+    const other = swimming[0]!;
+    if (other.pnl < -cash * 0.03 && pulled.pnl > other.pnl + 40) {
+      return {
+        id: "wrong_line",
+        stamp: "WRONG LINE",
+        body: `You reeled ${pulled.name} while ${other.name} kept swimming a loser. The skill was which rod to pull. You pulled the one that wasn’t drowning.`,
+        lesson: "Two seats means two risks. Yank is a choice, not a vibe.",
+      };
+    }
+    if (pulled.pnl < 0 && other.pnl > cash * 0.02) {
+      return {
+        id: "split_decision",
+        stamp: "SPLIT THE ROOM",
+        body: `You yanked ${pulled.name} off a loser. ${other.name} kept the slack and actually got paid. That’s delegation with a pulse.`,
+        lesson: "One line can be wrong while the other is fine. That’s the job.",
+      };
+    }
+  }
+
+  if (yanked.length === 2) {
+    return {
+      id: "reeled_room",
+      stamp: "REELED THE ROOM",
+      body: "Both lines came out of the tank. Nobody got to be a hero. The office looks like a manager works here. Maya hates that. Jules is updating a sheet.",
+      lesson: "Two yanks is still managing. It’s just louder.",
+    };
+  }
+
+  if (swimming.length === 2 && pnl < -cash * 0.04) {
+    return {
+      id: "two_bags",
+      stamp: "TWO BAGS, ONE DESK",
+      body: "You didn’t pull either line. Maya and Jules both swam the dump like it was a personality test. The office learned nothing except gravity.",
+      lesson: "Two unsupervised rods is how a red day gets a roommate.",
+    };
+  }
+
+  if (accountantHired && Math.abs(pnl) < cash * 0.03) {
+    return {
+      id: "accountant_saved",
+      stamp: "HR DID THEIR JOB",
+      body: "Caps on two seats turned a possible blowup into office small talk. The Accountant is insufferable and correct.",
+      lesson: "Caps are unsexy. Caps keep the lights on.",
+    };
+  }
+
+  return null;
 }
 
 export const DISCLAIMER =

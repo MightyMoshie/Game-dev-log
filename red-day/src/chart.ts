@@ -7,19 +7,20 @@ export function drawChart(
   opts: {
     entry: number;
     yankedAt: number | null;
+    yanks?: { at: number; label: string; color: string }[];
     ink: string;
     paper: string;
     red: string;
     green: string;
     gold: string;
   },
-): void {
+): { hook: { x: number; y: number } | null } {
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) return { hook: null };
   const dpr = Math.max(1, window.devicePixelRatio || 1);
   const cssW = canvas.clientWidth;
   const cssH = canvas.clientHeight;
-  if (cssW < 2 || cssH < 2) return;
+  if (cssW < 2 || cssH < 2) return { hook: null };
   if (canvas.width !== Math.floor(cssW * dpr) || canvas.height !== Math.floor(cssH * dpr)) {
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
@@ -108,21 +109,23 @@ export function drawChart(
     ctx.strokeRect(x - bodyW / 2, top, bodyW, h);
   });
 
-  if (opts.yankedAt != null && opts.yankedAt < vis.length) {
-    const x = pad.l + opts.yankedAt * slot + slot / 2;
+  const yanks = opts.yanks ?? (opts.yankedAt != null ? [{ at: opts.yankedAt, label: "YANK", color: opts.red }] : []);
+  yanks.forEach((yank) => {
+    if (yank.at >= vis.length) return;
+    const x = pad.l + yank.at * slot + slot / 2;
     ctx.save();
-    ctx.strokeStyle = opts.red;
+    ctx.strokeStyle = yank.color;
     ctx.lineWidth = 3;
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(x, pad.t);
     ctx.lineTo(x, cssH - pad.b);
     ctx.stroke();
-    ctx.fillStyle = opts.red;
+    ctx.fillStyle = yank.color;
     ctx.font = "800 10px Nunito, sans-serif";
-    ctx.fillText("YANK", x + 4, pad.t + 12);
+    ctx.fillText(yank.label, x + 4, pad.t + 12);
     ctx.restore();
-  }
+  });
 
   const last = vis[vis.length - 1]!;
   const ly = yOf(last.c);
@@ -138,6 +141,8 @@ export function drawChart(
   ctx.textAlign = "center";
   ctx.fillText(last.c.toFixed(1), cssW - pad.r + 26, ly + 4);
   ctx.textAlign = "left";
+  const lastX = pad.l + (vis.length - 1) * slot + slot / 2;
+  return { hook: { x: lastX, y: ly } };
 }
 
 function roundRect(

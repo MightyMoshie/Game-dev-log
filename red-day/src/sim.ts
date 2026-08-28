@@ -1,10 +1,15 @@
-import { BRIEFS, pickRoast, type Beat, type Roast } from "./copy";
+import { BRIEFS, pickRoast, type Beat, type Roast, type RoastLeg } from "./copy";
+import type { SeatId } from "./quotes";
 import { mulberry32, pick, daySeed } from "./rng";
 import {
   CANDLE_COUNT,
   FOMO_INDEX_RATIO,
+  JULES_SIZE,
+  JULES_SIZE_CAPPED,
   MAYA_SIZE,
   MAYA_SIZE_CAPPED,
+  MAYA_SIZE_DUO,
+  MAYA_SIZE_DUO_CAPPED,
   YOLO_MULT,
 } from "./state";
 
@@ -15,22 +20,38 @@ export interface Candle {
   c: number;
 }
 
+export type FomoStyle = "dip" | "chase";
+
+export interface SeatSpec {
+  id: SeatId;
+  name: string;
+  size: number;
+  fomoStyle: FomoStyle;
+  fomoDelay: number;
+}
+
 export interface PreparedDay {
   seed: number;
   day: number;
   ticker: string;
   headline: string;
   mayaTake: string;
+  julesTake: string;
   beats: Beat[];
   candles: Candle[];
   startPrice: number;
   entry: number;
   baseNotional: number;
+  cash: number;
   fomoIndex: number;
   hasAccountant: boolean;
+  seat2: boolean;
+  seats: SeatSpec[];
 }
 
 export interface LiveBook {
+  seatId: SeatId;
+  name: string;
   shares: number;
   notional: number;
   entry: number;
@@ -39,10 +60,42 @@ export interface LiveBook {
   rode: boolean;
   fomo: boolean;
   addedNotional: number;
+  fomoStyle: FomoStyle;
+  fomoIndex: number;
 }
 
 export function fomoIndex(): number {
   return Math.floor(CANDLE_COUNT * FOMO_INDEX_RATIO);
+}
+
+export function seatsFor(seat2: boolean, accountantHired: boolean): SeatSpec[] {
+  if (!seat2) {
+    return [
+      {
+        id: "maya",
+        name: "Maya",
+        size: accountantHired ? MAYA_SIZE_CAPPED : MAYA_SIZE,
+        fomoStyle: "dip",
+        fomoDelay: 0,
+      },
+    ];
+  }
+  return [
+    {
+      id: "maya",
+      name: "Maya",
+      size: accountantHired ? MAYA_SIZE_DUO_CAPPED : MAYA_SIZE_DUO,
+      fomoStyle: "dip",
+      fomoDelay: 0,
+    },
+    {
+      id: "jules",
+      name: "Jules",
+      size: accountantHired ? JULES_SIZE_CAPPED : JULES_SIZE,
+      fomoStyle: "chase",
+      fomoDelay: 6,
+    },
+  ];
 }
 
 export function buildDay(opts: {
@@ -50,6 +103,7 @@ export function buildDay(opts: {
   day: number;
   cash: number;
   accountantHired: boolean;
+  seat2?: boolean;
 }): PreparedDay {
   const seed = daySeed(opts.runSeed, opts.day);
   const rng = mulberry32(seed);
@@ -57,9 +111,10 @@ export function buildDay(opts: {
   const beats = pickBeats(rng, opts.day, opts.accountantHired);
   const startPrice = 18 + rng() * 42;
   const candles = generateCandles(rng, startPrice, beats, opts.accountantHired);
-  const size = opts.accountantHired ? MAYA_SIZE_CAPPED : MAYA_SIZE;
+  const seat2 = Boolean(opts.seat2);
+  const seats = seatsFor(seat2, opts.accountantHired);
   const entry = candles[0]!.o;
-  const baseNotional = Math.max(400, opts.cash * size);
+  const baseNotional = seats.reduce((s, seat) => s + Math.max(400, opts.cash * seat.size), 0);
 
   return {
     seed,
@@ -67,13 +122,17 @@ export function buildDay(opts: {
     ticker: brief.ticker,
     headline: brief.headline,
     mayaTake: brief.mayaTake,
+    julesTake: brief.julesTake,
     beats,
     candles,
     startPrice,
     entry,
     baseNotional,
+    cash: opts.cash,
     fomoIndex: fomoIndex(),
     hasAccountant: opts.accountantHired,
+    seat2,
+    seats,
   };
 }
 
@@ -81,7 +140,6 @@ export function pickBeats(rng: () => number, day: number, calm: boolean): Beat[]
   const pool: Beat[] = calm
     ? ["bleed", "fakeout", "gap-up", "squeeze"]
     : ["dump", "fakeout", "gap-up", "squeeze", "bleed"];
-  // Early days without HR: bias a dump so the smoke can actually go red.
   if (!calm && day <= 3 && rng() < 0.72) {
     const extra = pick(rng, ["fakeout", "gap-up"] as const);
     return extra === "fakeout" ? ["dump", "fakeout"] : ["gap-up", "dump"];
@@ -135,16 +193,26 @@ export function generateCandles(
   return out;
 }
 
-export function newBook(day: PreparedDay): LiveBook {
+export function newBooks(day: PreparedDay, cash: number): LiveBook[] {
+  return day.seats.map((seat) => newBook(day, seat, cash));
+}
+
+export function newBook(day: PreparedDay, seat?: SeatSpec, cash?: number): LiveBook {
+  const spec = seat ?? day.seats[0]!;
+  const notional = Math.max(400, (cash ?? day.cash) * spec.size);
   return {
-    shares: day.baseNotional / day.entry,
-    notional: day.baseNotional,
+    seatId: spec.id,
+    name: spec.name,
+    shares: notional / day.entry,
+    notional,
     entry: day.entry,
     yankedAt: null,
     exitPrice: null,
     rode: false,
     fomo: false,
     addedNotional: 0,
+    fomoStyle: spec.fomoStyle,
+    fomoIndex: day.fomoIndex + spec.fomoDelay,
   };
 }
 
@@ -160,7 +228,6 @@ export function isFlat(book: LiveBook): boolean {
 export function tryRide(day: PreparedDay, book: LiveBook): boolean {
   if (isFlat(book) || book.rode) return false;
   book.rode = true;
-  // Already FOMO-added or HR-capped: tapping Ride endorses the hold, no second add.
   if (day.hasAccountant || book.fomo) return true;
   addSize(book, book.notional * (YOLO_MULT - 1));
   return true;
@@ -173,14 +240,19 @@ export function tryYank(day: PreparedDay, book: LiveBook, index: number): boolea
   return true;
 }
 
-/** Idle FOMO: Maya adds into a loser (or sometimes a winner) if the player freezes. */
 export function maybeIdleFomo(day: PreparedDay, book: LiveBook, index: number): boolean {
   if (day.hasAccountant) return false;
   if (isFlat(book) || book.rode || book.fomo) return false;
-  if (index < day.fomoIndex) return false;
+  if (index < book.fomoIndex) return false;
   const u = unrealized(day, book, index);
-  // Usually adds on red. Sometimes still adds on green ("we're so back").
-  const greedy = u >= 0 && index === day.fomoIndex && day.seed % 5 === 0;
+  if (book.fomoStyle === "chase") {
+    const greedy = u > 0 || (index === book.fomoIndex && day.seed % 4 === 0);
+    if (!greedy) return false;
+    book.fomo = true;
+    addSize(book, book.notional * (YOLO_MULT - 1));
+    return true;
+  }
+  const greedy = u >= 0 && index === book.fomoIndex && day.seed % 5 === 0;
   if (u < 0 || greedy) {
     book.fomo = true;
     addSize(book, book.notional * (YOLO_MULT - 1));
@@ -212,22 +284,35 @@ export function recoveredAfterYank(day: PreparedDay, book: LiveBook): number {
   return (last - book.exitPrice) / book.exitPrice;
 }
 
-export function closeDay(day: PreparedDay, book: LiveBook): {
+export function closeDay(day: PreparedDay, books: LiveBook | LiveBook[]): {
   pnl: number;
   roast: Roast;
+  legs: RoastLeg[];
 } {
+  const list = Array.isArray(books) ? books : [books];
   const last = day.candles.length - 1;
-  const pnl = unrealized(day, book, last);
-  const roast = pickRoast({
-    pnl,
-    cash: day.baseNotional / (day.hasAccountant ? MAYA_SIZE_CAPPED : MAYA_SIZE),
+  const legs: RoastLeg[] = list.map((book) => ({
+    seatId: book.seatId,
+    name: book.name,
+    pnl: unrealized(day, book, last),
     yanked: book.yankedAt != null,
-    yankedAt: book.yankedAt,
-    candlesLeftAfterYankMove: book.yankedAt == null ? 0 : last - book.yankedAt,
     rode: book.rode,
     fomo: book.fomo,
     recoveredPct: recoveredAfterYank(day, book),
+  }));
+  const pnl = legs.reduce((s, l) => s + l.pnl, 0);
+  const primary = list[0]!;
+  const roast = pickRoast({
+    pnl,
+    cash: day.cash,
+    yanked: list.length === 1 ? primary.yankedAt != null : list.every((b) => b.yankedAt != null),
+    yankedAt: primary.yankedAt,
+    candlesLeftAfterYankMove: primary.yankedAt == null ? 0 : last - primary.yankedAt,
+    rode: list.some((b) => b.rode),
+    fomo: list.some((b) => b.fomo),
+    recoveredPct: recoveredAfterYank(day, primary),
     accountantHired: day.hasAccountant,
+    legs,
   });
-  return { pnl, roast };
+  return { pnl, roast, legs };
 }

@@ -8,6 +8,7 @@
   --green: #1f8a4c;
   --gold: #f0b429;
   --maya: #ff3d7a;
+  --jules: #1f8a7a;
   --navy: #1b2744;
   --shadow: 6px 6px 0 var(--ink);
   color-scheme: dark;
@@ -436,15 +437,232 @@ body {
 
 .screen.floor {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
-  gap: 8px;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  gap: 6px;
+  padding-bottom: 12px;
 }
 
+.office {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(96px, 36%) minmax(0, 1fr);
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--paper-2);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.wall {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px 8px 6px;
+  background:
+    linear-gradient(180deg, #4a2a1c 0%, #2a1a12 100%);
+}
+
+.plant {
+  width: 14px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(#1f8a4c, #0d5c32);
+  border: 3px solid var(--ink);
+  align-self: end;
+  height: 42%;
+}
+
+.clock-face {
+  width: 28px;
+  align-self: start;
+  margin-top: 8px;
+  background: var(--foam);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 99px;
+  font-size: 8px;
+  font-weight: 900;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.tank {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1b2744;
+  border: 4px solid var(--gold);
+  border-radius: 12px;
+  padding: 3px;
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+.tank-label {
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.tank #tape,
 #tape {
   width: 100%;
   height: 100%;
-  min-height: 0;
+  min-height: 72px;
   display: block;
+  flex: 1;
+}
+
+.line-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.fish-line {
+  stroke: var(--ink);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.fish-line.maya {
+  stroke: #c2185b;
+}
+
+.fish-line.jules {
+  stroke: #146056;
+}
+
+.fish-line.selected {
+  stroke: var(--gold);
+  stroke-width: 5;
+}
+
+.fish-line.slack {
+  stroke-dasharray: 7 6;
+}
+
+.fish-line.reeled {
+  stroke-width: 2.5;
+  opacity: 0.4;
+}
+
+.bobber {
+  fill: var(--red);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.bobber.jules {
+  fill: var(--jules);
+}
+
+.bobber.off {
+  opacity: 0;
+}
+
+.aisle {
+  position: relative;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--paper) 0 18px,
+      var(--paper-2) 18px 36px
+    );
+  padding: 6px 8px;
+  min-height: 0;
+}
+
+.aisle.solo {
+  display: grid;
+  place-items: center;
+}
+
+.aisle.stacked {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 4px;
+}
+
+.desk-seat {
+  position: relative;
+  width: min(100%, 280px);
+  margin: 0 auto;
+  border: 4px solid var(--ink);
+  background: rgba(255, 246, 232, 0.35);
+  border-radius: 16px;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--ink);
+  touch-action: manipulation;
+}
+
+.desk-seat.selected {
+  background: rgba(240, 180, 41, 0.28);
+  box-shadow: 0 0 0 3px var(--gold), 4px 4px 0 var(--ink);
+}
+
+.iso-seat-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 132px;
+}
+
+.rod-tip {
+  position: absolute;
+  right: 16%;
+  top: 16%;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+
+.seat-pnl {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--ink);
+  color: var(--gold);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.hr-nook {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 72px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hr-bubble {
+  margin: 0;
+  font-size: 8px;
+  font-weight: 800;
+  background: var(--foam);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 3px;
+  max-height: 48px;
+  overflow: hidden;
+}
+
+.floor-bubble {
+  min-height: 52px;
 }
 
 .actions {
@@ -458,13 +676,13 @@ body {
 
 .pos {
   font-family: "JetBrains Mono", monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   text-align: center;
   background: var(--ink);
   color: var(--gold);
   border-radius: 10px;
-  padding: 8px;
+  padding: 7px;
 }
 
 .pos.flash {
@@ -629,6 +847,19 @@ body {
   color: var(--foam);
 }
 
+.screen.brief {
+  overflow: auto;
+}
+
+.screen.brief .maya-row {
+  min-height: 0;
+}
+
+.chip.teal {
+  background: var(--jules);
+  color: var(--foam);
+}
+
 .unlock-banner {
   margin: 0;
   background: var(--gold);
@@ -650,5 +881,11 @@ body {
   .btn {
     font-size: 22px;
     padding: 10px;
+  }
+  .iso-seat-svg {
+    max-height: 96px;
+  }
+  .floor-bubble p {
+    font-size: 12px;
   }
 }

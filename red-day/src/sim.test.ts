@@ -6,6 +6,7 @@ import {
   generateCandles,
   maybeIdleFomo,
   newBook,
+  newBooks,
   pickBeats,
   tryRide,
   tryYank,
@@ -29,8 +30,10 @@ describe("sim", () => {
   it("caps Maya size when the accountant is hired", () => {
     const raw = buildDay({ runSeed: 7, day: 1, cash: 10_000, accountantHired: false });
     const cap = buildDay({ runSeed: 7, day: 1, cash: 10_000, accountantHired: true });
-    assert.ok(Math.abs(raw.baseNotional - 10_000 * MAYA_SIZE) < 1);
-    assert.ok(Math.abs(cap.baseNotional - 10_000 * MAYA_SIZE_CAPPED) < 1);
+    const rawBook = newBook(raw);
+    const capBook = newBook(cap);
+    assert.ok(Math.abs(rawBook.notional - 10_000 * MAYA_SIZE) < 1);
+    assert.ok(Math.abs(capBook.notional - 10_000 * MAYA_SIZE_CAPPED) < 1);
   });
 
   it("yank locks P&L even if the tape keeps moving", () => {
@@ -123,6 +126,44 @@ describe("sim", () => {
     assert.equal(typeof roast.stamp, "string");
     assert.ok(roast.stamp.length > 3);
     assert.equal(typeof pnl, "number");
+  });
+
+  it("day 1 is Maya only; seat 2 is a second independent book", () => {
+    const one = buildDay({ runSeed: 8, day: 1, cash: 10_000, accountantHired: false, seat2: false });
+    assert.equal(one.seats.length, 1);
+    assert.equal(one.seats[0]?.id, "maya");
+
+    const two = buildDay({ runSeed: 8, day: 2, cash: 10_000, accountantHired: false, seat2: true });
+    assert.equal(two.seats.length, 2);
+    const books = newBooks(two, 10_000);
+    assert.equal(books.length, 2);
+    tryYank(two, books[0]!, 8);
+    assert.equal(books[0]!.yankedAt, 8);
+    assert.equal(books[1]!.yankedAt, null);
+    const locked = unrealized(two, books[0]!, 8);
+    assert.equal(unrealized(two, books[0]!, CANDLE_COUNT - 1), locked);
+    const julesLater = unrealized(two, books[1]!, CANDLE_COUNT - 1);
+    assert.equal(books[1]!.exitPrice, null);
+    assert.equal(typeof julesLater, "number");
+  });
+
+  it("roasts the wrong line when you yank the wrong seat", () => {
+    const roast = pickRoast({
+      pnl: -700,
+      cash: 10_000,
+      yanked: false,
+      yankedAt: 10,
+      candlesLeftAfterYankMove: 20,
+      rode: false,
+      fomo: false,
+      recoveredPct: 0,
+      accountantHired: false,
+      legs: [
+        { seatId: "maya", name: "Maya", pnl: 120, yanked: true, rode: false, fomo: false, recoveredPct: 0 },
+        { seatId: "jules", name: "Jules", pnl: -820, yanked: false, rode: false, fomo: true, recoveredPct: 0 },
+      ],
+    });
+    assert.equal(roast.id, "wrong_line");
   });
 });
 
