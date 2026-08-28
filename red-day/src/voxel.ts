@@ -6,7 +6,7 @@ import type { Pose } from "./office";
 const C = {
   ink: 0x140c08,
   paper: 0xf4e4c1,
-  paper2: 0xead4a8,
+  paper2: 0xc9a56e,
   foam: 0xfff6e8,
   red: 0xe31c3d,
   gold: 0xf0b429,
@@ -299,7 +299,7 @@ export class VoxelOffice {
     for (let z = -4; z <= 4; z++) {
       for (let x = -3; x <= 3; x++) {
         const light = (x + z) % 2 === 0;
-        box(root, 0.92, 0.22, 0.92, light ? C.paper : C.paper2, x, 0.11, z);
+        box(root, 0.92, 0.3, 0.92, light ? C.paper : C.paper2, x, 0.15, z);
       }
     }
 
