@@ -2,7 +2,8 @@ import { julesSvg, lockSvg, mayaSvg } from "./art";
 import { DISCLAIMER } from "./copy";
 import type { Roast } from "./copy";
 import { officeMarkup } from "./office";
-import { money, signedMoney, type DeskSave } from "./state";
+import { pitViewFromSave, statStrip } from "./stats";
+import { money, signedMoney, type DeskSave, type UpgradeId } from "./state";
 import type { LiveBook, PreparedDay } from "./sim";
 
 export function bootScreen(existing: DeskSave | null): string {
@@ -71,21 +72,24 @@ export function briefScreen(save: DeskSave, day: PreparedDay): string {
       }
       <p class="beats">Sheets are premade. You don’t pick the ticker or the side.</p>
       <button class="btn primary" data-act="floor">OPEN THE FLOOR</button>
-      <p class="fine">${two ? "Tap a desk or jumbotron tile. Yank one, the other stays glued." : "~28 seconds. Yank rips them off the chair."}</p>
+      <p class="fine">${two ? "Tap a desk or jumbotron tile. Yank one, the other stays glued." : `~${Math.round(day.floorMs / 1000)} seconds. Yank rips them off the chair.`}</p>
     </section>
   `;
 }
 
 export function floorScreen(save: DeskSave, day: PreparedDay): string {
   const floorTickers = [...new Set(day.seats.map((s) => s.ticker))].join(" · ");
+  const view = pitViewFromSave(save);
   return `
     <section class="screen floor">
       ${officeMarkup({
         seats: day.seats.map((s) => ({ id: s.id, name: s.name })),
         ticker: floorTickers,
         compliance: save.upgradeCompliance || save.accountantHired,
+        floorMs: day.floorMs,
       })}
       <div class="floor-dock">
+        ${statStrip(view, { tone: "floor" })}
         <div class="pos" id="pos">MAYA LONG · ${money(day.seats[0] ? save.cash * day.seats[0].size : 0)} · ${escapeHtml(day.seats[0]?.ticker ?? day.ticker)}</div>
         <div class="actions">
           <button class="btn gold" data-act="ride" id="btn-ride">LET THEM RIDE</button>
@@ -133,17 +137,23 @@ export function bellScreen(opts: {
   `;
 }
 
-export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked: boolean): string {
+export function deskScreen(
+  save: DeskSave,
+  lastPnl: number | null,
+  justUnlocked: boolean,
+  justPlaced: UpgradeId | null = null,
+): string {
   const shop = save.hasUpgrades;
   const seat2 = save.hasSeat2;
   const c = save.upgradeCompliance || save.accountantHired;
   const e = save.upgradeEspresso;
   const r = save.upgradeResearch;
+  const view = pitViewFromSave(save);
   const kit = (id: "compliance" | "espresso" | "research", title: string, blurb: string, placed: boolean) => `
     <article class="kit-card ${shop ? "" : "locked"}">
       <div>
         <h3>${title}</h3>
-        <p>${!shop ? "Unlocks after the first real red day." : placed ? blurb : "One item, whole floor."}</p>
+        <p>${!shop ? "Unlocks after the first real red day." : placed ? blurb : "One item, whole floor. Watch the chip."}</p>
       </div>
       ${
         !shop
@@ -165,10 +175,11 @@ export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked:
         ${lastPnl == null ? "" : `<p class="last ${lastPnl < 0 ? "down" : "up"}">last print ${signedMoney(lastPnl)}</p>`}
       </div>
       ${justUnlocked ? `<p class="unlock-banner">First Red Day. Jules took seat 2. Place 3 floor upgrades — each hits EVERYONE.</p>` : ""}
+      ${statStrip(view, { tone: "desk", flash: justPlaced })}
       <p class="kicker kit-kicker">FLOOR KIT</p>
-      ${kit("compliance", "Compliance posters", "Size cap + drip. Risk muted for everyone.", c)}
-      ${kit("espresso", "Espresso machine", "Faster quotes. Earlier FOMO. Dumber adds.", e)}
-      ${kit("research", "Research glass", "Clearer jumbotron. A tell before a blowup.", r)}
+      ${kit("compliance", "Compliance posters", `${view.sizeText} size · drip on. Whole floor.`, c)}
+      ${kit("espresso", "Espresso machine", `${view.speedText} day · ${view.speedHint}.`, e)}
+      ${kit("research", "Research glass", `Inquiry ${view.inquiryText}. Tell before a blowup.`, r)}
       <div class="roster compact">
         <article class="hire-card">
           ${mayaSvg("smug")}

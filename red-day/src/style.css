@@ -535,12 +535,104 @@ body {
   pointer-events: none;
 }
 
+.stat-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 5px 4px 6px;
+  border-radius: 10px;
+  text-align: center;
+  line-height: 1.05;
+}
+
+.stat-k {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.stat-v {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 800;
+  font-size: 15px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-h {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+
+.stat-strip.floor .stat-chip {
+  background: #152038;
+  color: var(--gold);
+  border: 2px solid #3a4a6a;
+}
+
+.stat-strip.floor .stat-chip.on {
+  border-color: var(--gold);
+  background: #1b2744;
+}
+
+.stat-strip.floor .stat-chip.dim {
+  color: #8aa0c8;
+  border-color: #2a3a58;
+}
+
+.stat-strip.floor .stat-chip.alert {
+  border-color: var(--red);
+  background: #3a1020;
+  color: #fff6e8;
+}
+
+.stat-strip.desk .stat-chip {
+  background: var(--foam);
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  color: var(--ink);
+}
+
+.stat-strip.desk .stat-chip.dim {
+  background: #e4d7bc;
+  color: #5a4634;
+}
+
+.stat-strip.desk .stat-chip.on {
+  background: var(--gold);
+}
+
+.stat-chip.just {
+  animation: statpop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes statpop {
+  from {
+    transform: scale(1.18);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
 .floor-dock {
-  padding: 8px 10px 12px;
+  padding: 6px 10px 10px;
   background: #0c1428;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .floor-dock .pos {
@@ -570,8 +662,9 @@ body {
 .btn.panic {
   background: var(--red);
   color: var(--foam);
-  font-size: 22px;
+  font-size: 20px;
   width: 100%;
+  padding: 10px 14px;
 }
 
 .badge.short {

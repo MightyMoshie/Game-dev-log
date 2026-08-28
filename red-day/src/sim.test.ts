@@ -15,8 +15,9 @@ import {
   unrealized,
 } from "./sim";
 import { mulberry32 } from "./rng";
-import { CANDLE_COUNT, MAYA_SIZE, MAYA_SIZE_CAPPED } from "./state";
+import { CANDLE_COUNT, EMPTY_UPGRADES, FLOOR_MS, FLOOR_MS_ESPRESSO, MAYA_SIZE, MAYA_SIZE_CAPPED } from "./state";
 import { pickRoast } from "./copy";
+import { pitView } from "./stats";
 
 describe("sim", () => {
   it("builds a seeded day with candles and a fictional ticker", () => {
@@ -250,6 +251,62 @@ describe("sim", () => {
     book.candles[i + 6] = { ...book.candles[i + 6]!, c: 18.8, o: 19, h: 19.1, l: 18.6 };
     assert.equal(blowupTell(book, i), "TAPE SOURS");
   });
+
+  it("espresso shortens the day clock and the quote gap", () => {
+    const raw = buildDay({ runSeed: 9, day: 2, cash: 10_000, accountantHired: false });
+    const caf = buildDay({
+      runSeed: 9,
+      day: 2,
+      cash: 10_000,
+      accountantHired: false,
+      upgrades: { compliance: false, espresso: true, research: false },
+    });
+    assert.equal(raw.floorMs, FLOOR_MS);
+    assert.equal(caf.floorMs, FLOOR_MS_ESPRESSO);
+    assert.ok(caf.quoteMs < raw.quoteMs);
+    assert.ok(caf.fomoIndex < raw.fomoIndex);
+  });
+
+  it("closeDay names an ignored research tell", () => {
+    const day = buildDay({
+      runSeed: 5,
+      day: 1,
+      cash: 10_000,
+      accountantHired: false,
+      upgrades: { compliance: false, espresso: false, research: true },
+    });
+    const book = newBook(day);
+    book.warned = true;
+    const last = book.candles.length - 1;
+    book.candles[last] = { ...book.candles[last]!, c: book.entry * 0.7, l: book.entry * 0.68 };
+    const { roast } = closeDay(day, [book]);
+    assert.equal(roast.id, "research_ignored");
+  });
+});
+
+describe("pit stats", () => {
+  it("shows baseline chips until a perk is placed", () => {
+    const v = pitView(EMPTY_UPGRADES, true);
+    assert.equal(v.sizeText, "1.0x");
+    assert.equal(v.speedText, "28s");
+    assert.equal(v.inquiryText, "OFF");
+    assert.equal(v.floorMs, FLOOR_MS);
+    assert.equal(v.sizeOn, false);
+    assert.equal(v.speedOn, false);
+    assert.equal(v.inquiryOn, false);
+  });
+
+  it("moves size, speed, and inquiry the moment a perk is placed", () => {
+    const size = pitView({ compliance: true, espresso: false, research: false }, true);
+    assert.ok(size.sizeMult < 1);
+    assert.notEqual(size.sizeText, "1.0x");
+    const speed = pitView({ compliance: false, espresso: true, research: false }, true);
+    assert.equal(speed.speedText, "20s");
+    assert.equal(speed.floorMs, FLOOR_MS_ESPRESSO);
+    assert.ok(speed.speedMult > 1);
+    const inq = pitView({ compliance: false, espresso: false, research: true }, true);
+    assert.equal(inq.inquiryText, "ON");
+  });
 });
 
 describe("roast picker", () => {
@@ -292,5 +349,49 @@ describe("roast picker", () => {
       accountantHired: false,
     });
     assert.equal(yolo.id, "yolo_size");
+  });
+
+  it("names espresso, ignored research, and compliance on the roast", () => {
+    const espresso = pickRoast({
+      pnl: -800,
+      cash: 10_000,
+      yanked: false,
+      yankedAt: null,
+      candlesLeftAfterYankMove: 0,
+      rode: false,
+      fomo: true,
+      recoveredPct: 0,
+      accountantHired: false,
+      espresso: true,
+    });
+    assert.equal(espresso.id, "espresso_double");
+
+    const research = pickRoast({
+      pnl: -400,
+      cash: 10_000,
+      yanked: false,
+      yankedAt: null,
+      candlesLeftAfterYankMove: 0,
+      rode: false,
+      fomo: false,
+      recoveredPct: 0,
+      accountantHired: false,
+      research: true,
+      ignoredTell: true,
+    });
+    assert.equal(research.id, "research_ignored");
+
+    const cap = pickRoast({
+      pnl: -100,
+      cash: 10_000,
+      yanked: false,
+      yankedAt: null,
+      candlesLeftAfterYankMove: 0,
+      rode: false,
+      fomo: false,
+      recoveredPct: 0,
+      accountantHired: true,
+    });
+    assert.equal(cap.id, "compliance_saved");
   });
 });

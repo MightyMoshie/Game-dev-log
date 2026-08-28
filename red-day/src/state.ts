@@ -2,6 +2,10 @@ export const SAVE_KEY = "red-day-v0";
 
 export const START_CASH = 10_000;
 export const FLOOR_MS = 28_000;
+/** Espresso shortens the open so the Speed chip and the tape clock match. */
+export const FLOOR_MS_ESPRESSO = 20_000;
+export const QUOTE_MS = 2_600;
+export const QUOTE_MS_ESPRESSO = 1_600;
 export const CANDLE_COUNT = 48;
 export const MAYA_SIZE = 0.42;
 export const MAYA_SIZE_CAPPED = 0.18;

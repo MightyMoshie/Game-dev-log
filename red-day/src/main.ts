@@ -28,7 +28,6 @@ import {
 import {
   DRIP_FLAT,
   DRIP_PCT,
-  FLOOR_MS,
   CANDLE_COUNT,
   clearSave,
   loadSave,
@@ -181,10 +180,15 @@ class RedDay {
     this.loop();
   }
 
+  private floorMs(): number {
+    return this.day?.floorMs ?? 28_000;
+  }
+
   private loop = (): void => {
     if (!this.day) return;
-    const elapsed = Math.min(FLOOR_MS, performance.now() - this.floorStart);
-    const t = elapsed / FLOOR_MS;
+    const floorMs = this.floorMs();
+    const elapsed = Math.min(floorMs, performance.now() - this.floorStart);
+    const t = elapsed / floorMs;
     const index = Math.min(CANDLE_COUNT - 1, Math.floor(t * CANDLE_COUNT));
 
     for (const book of this.books) {
@@ -197,7 +201,7 @@ class RedDay {
 
     this.paintFloor(index, elapsed);
 
-    if (elapsed >= FLOOR_MS) {
+    if (elapsed >= floorMs) {
       this.finishDay();
       return;
     }
@@ -208,25 +212,34 @@ class RedDay {
     if (!this.day) return;
     const canvas = this.root.querySelector<HTMLCanvasElement>("#jumbo");
     const research = Boolean(this.save?.upgradeResearch);
+    let liveTell: string | null = null;
     if (canvas) {
       drawJumbo(
         canvas,
-        this.books.map((book) => ({
-          id: book.seatId,
-          name: book.name,
-          ticker: book.ticker,
-          side: book.side,
-          pnl: unrealized(this.day!, book, index),
-          notional: book.notional,
-          candles: book.candles,
-          index,
-          selected: book.seatId === this.selected,
-          yanked: book.yankedAt != null,
-          warn: research ? blowupTell(book, index) : null,
-        })),
+        this.books.map((book) => {
+          const warn = research ? blowupTell(book, index) : null;
+          if (warn && book.yankedAt == null) {
+            book.warned = true;
+            if (!liveTell) liveTell = warn;
+          }
+          return {
+            id: book.seatId,
+            name: book.name,
+            ticker: book.ticker,
+            side: book.side,
+            pnl: unrealized(this.day!, book, index),
+            notional: book.notional,
+            candles: book.candles,
+            index,
+            selected: book.seatId === this.selected,
+            yanked: book.yankedAt != null,
+            warn,
+          };
+        }),
         { research },
       );
     }
+    this.paintInquiry(liveTell);
 
     this.voxel?.sync({
       jumbo: canvas,
@@ -240,7 +253,7 @@ class RedDay {
       })),
     });
 
-    const left = Math.max(0, Math.ceil((FLOOR_MS - elapsed) / 1000));
+    const left = Math.max(0, Math.ceil((this.floorMs() - elapsed) / 1000));
     const clock = this.root.querySelector("#clock");
     if (clock) clock.textContent = `0:${String(left).padStart(2, "0")}`;
 
@@ -266,7 +279,7 @@ class RedDay {
     }
 
     const now = performance.now();
-    const quoteMs = this.save?.upgradeEspresso ? 1400 : 2600;
+    const quoteMs = this.day.quoteMs;
     if (now - this.lastLineAt > quoteMs) {
       this.lastLineAt = now;
       this.speakSelected("idle");
@@ -306,12 +319,17 @@ class RedDay {
     this.syncButtons();
   }
 
+  private candleIndex(): number {
+    const floorMs = this.floorMs();
+    const elapsed = Math.min(floorMs, performance.now() - this.floorStart);
+    return Math.min(CANDLE_COUNT - 1, Math.floor((elapsed / floorMs) * CANDLE_COUNT));
+  }
+
   private yank(): void {
     if (!this.day) return;
     const book = this.book(this.selected);
     if (!book) return;
-    const elapsed = Math.min(FLOOR_MS, performance.now() - this.floorStart);
-    const index = Math.min(CANDLE_COUNT - 1, Math.floor((elapsed / FLOOR_MS) * CANDLE_COUNT));
+    const index = this.candleIndex();
     if (!tryYank(this.day, book, index)) return;
     audio.yank();
     this.lastYankId = book.seatId;
@@ -340,8 +358,7 @@ class RedDay {
 
   private panic(): void {
     if (!this.day) return;
-    const elapsed = Math.min(FLOOR_MS, performance.now() - this.floorStart);
-    const index = Math.min(CANDLE_COUNT - 1, Math.floor((elapsed / FLOOR_MS) * CANDLE_COUNT));
+    const index = this.candleIndex();
     const n = tryYankAll(this.day, this.books, index);
     if (n === 0 && this.books.every((b) => b.yankedAt != null)) return;
     this.panicked = true;
@@ -394,6 +411,24 @@ class RedDay {
     });
   }
 
+  private paintInquiry(liveTell: string | null): void {
+    const chip = this.root.querySelector('[data-stat="research"]');
+    const val = this.root.querySelector("#stat-inquiry-v");
+    const hint = chip?.querySelector(".stat-h");
+    if (!chip || !val) return;
+    if (liveTell) {
+      val.textContent = liveTell;
+      if (hint) hint.textContent = "tell live";
+      chip.classList.add("on", "alert");
+      chip.classList.remove("dim");
+    } else if (this.day?.research) {
+      val.textContent = "ON";
+      if (hint) hint.textContent = "blowup warn";
+      chip.classList.add("on");
+      chip.classList.remove("dim", "alert");
+    }
+  }
+
   private showDesk(): void {
     if (!this.save) return;
     this.root.innerHTML = deskScreen(this.save, this.lastPnl, this.justUnlocked);
@@ -408,7 +443,7 @@ class RedDay {
     else this.save.upgradeResearch = true;
     writeSave(this.save);
     this.justUnlocked = false;
-    this.showDesk();
+    this.root.innerHTML = deskScreen(this.save, this.lastPnl, false, id);
   }
 
   private nextDay(): void {

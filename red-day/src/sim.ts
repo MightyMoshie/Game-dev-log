@@ -18,6 +18,7 @@ import {
   panicTax,
   type FloorUpgrades,
 } from "./state";
+import { pitView } from "./stats";
 
 export interface Candle {
   o: number;
@@ -62,6 +63,8 @@ export interface PreparedDay {
   research: boolean;
   seat2: boolean;
   seats: SeatSpec[];
+  floorMs: number;
+  quoteMs: number;
 }
 
 export interface LiveBook {
@@ -80,6 +83,7 @@ export interface LiveBook {
   addedNotional: number;
   fomoStyle: FomoStyle;
   fomoIndex: number;
+  warned: boolean;
 }
 
 export function fomoIndex(espresso = false): number {
@@ -165,6 +169,7 @@ export function buildDay(opts: {
   });
   const maya = seats[0]!;
   const baseNotional = seats.reduce((s, seat) => s + Math.max(400, opts.cash * seat.size), 0);
+  const stats = pitView({ compliance: capped, espresso, research: upgrades.research }, seat2);
 
   return {
     seed,
@@ -185,6 +190,8 @@ export function buildDay(opts: {
     research: upgrades.research,
     seat2,
     seats,
+    floorMs: stats.floorMs,
+    quoteMs: stats.quoteMs,
   };
 }
 
@@ -269,6 +276,7 @@ export function newBook(day: PreparedDay, seat?: SeatSpec, cash?: number): LiveB
     addedNotional: 0,
     fomoStyle: spec.fomoStyle,
     fomoIndex: day.fomoIndex + delay,
+    warned: false,
   };
 }
 
@@ -394,6 +402,7 @@ export function closeDay(
   const panic = Boolean(opts?.panic);
   if (panic) pnl -= panicTax(day.cash);
   const primary = list[0]!;
+  const ignoredTell = list.some((b) => b.warned && b.yankedAt == null);
   const roast = pickRoast({
     pnl,
     cash: day.cash,
@@ -404,6 +413,9 @@ export function closeDay(
     fomo: list.some((b) => b.fomo),
     recoveredPct: recoveredAfterYank(day, primary),
     accountantHired: day.hasAccountant,
+    espresso: day.espresso,
+    research: day.research,
+    ignoredTell,
     panic,
     legs,
   });

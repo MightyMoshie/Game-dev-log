@@ -7,14 +7,16 @@ export function officeMarkup(opts: {
   seats: { id: SeatId; name: string }[];
   ticker: string;
   compliance: boolean;
+  floorMs?: number;
 }): string {
   const duo = opts.seats.length > 1;
+  const secs = Math.round((opts.floorMs ?? 28_000) / 1000);
   return `
     <div class="world ${duo ? "duo" : "solo"}" id="office">
       <div class="voxel-host" id="voxel-host"></div>
       <canvas id="jumbo" class="tank-source jumbo-source" width="960" height="480"></canvas>
       <header class="hud">
-        <div class="hud-chip"><span class="clock-label">TAPE</span><span class="clock" id="clock">0:28</span></div>
+        <div class="hud-chip"><span class="clock-label">TAPE</span><span class="clock" id="clock">0:${String(secs).padStart(2, "0")}</span></div>
         <div class="hud-chip fat"><span class="ticker" id="ticker">${opts.ticker}</span></div>
         <div class="hud-chip"><span class="clock-label">DESK</span><span class="live-pnl" id="live-pnl">$0</span></div>
       </header>

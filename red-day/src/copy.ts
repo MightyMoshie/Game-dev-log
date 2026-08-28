@@ -89,6 +89,9 @@ export function pickRoast(input: {
   fomo: boolean;
   recoveredPct: number;
   accountantHired: boolean;
+  espresso?: boolean;
+  research?: boolean;
+  ignoredTell?: boolean;
   panic?: boolean;
   legs?: RoastLeg[];
 }): Roast {
@@ -97,6 +100,7 @@ export function pickRoast(input: {
   void input.candlesLeftAfterYankMove;
   const legs = input.legs ?? [];
   const pctOfDesk = pnl / Math.max(cash, 1);
+  const salt = Math.abs(Math.round(pnl) + Math.round(cash));
 
   if (input.panic) {
     return {
@@ -105,6 +109,58 @@ export function pickRoast(input: {
       body: "You dumped the whole floor into the aisle. Jumbotron blinked. Paper hands, meet actual hands. The tax is the point. Per-desk yank is the job. This was a fire alarm.",
       lesson: "Panic is a decision with a surcharge. Yank one book at a time.",
     };
+  }
+
+  if (input.research && input.ignoredTell && pnl < 0 && !yanked) {
+    return perkPick(
+      [
+        {
+          id: "research_ignored",
+          stamp: "RESEARCH SCREAMED",
+          body: "Research screamed and you ignored it. The tell was the job. You treated it like wallpaper.",
+          lesson: "A warning you don’t yank on is just a decoration.",
+        },
+        {
+          id: "research_ignored",
+          stamp: "GLASS SAID SOURS",
+          body: "Inquiry lit TAPE SOURS. You left them glued. The jumbotron did its job. The desk lead did not.",
+          lesson: "Research is only a perk if you use the yank.",
+        },
+        {
+          id: "research_ignored",
+          stamp: "IGNORED THE TELL",
+          body: "The wall screamed. You babysat the quote instead of the book. That’s how a tell becomes a roast.",
+          lesson: "ON means yankable information. Off means you’re guessing.",
+        },
+      ],
+      salt,
+    );
+  }
+
+  if (input.espresso && fomo && pnl < -cash * 0.03) {
+    return perkPick(
+      [
+        {
+          id: "espresso_double",
+          stamp: "ESPRESSO HANDS",
+          body: "Espresso made her double before you blinked. The jumbotron didn’t even finish the sentence.",
+          lesson: "Speed is a perk. FOMO is still FOMO.",
+        },
+        {
+          id: "espresso_double",
+          stamp: "CAFFEINE ADD",
+          body: "The machine sped up the quotes and the add. She was oversized on purpose, just sooner. You hosted that.",
+          lesson: "Faster lines are not a process. They’re a shorter fuse.",
+        },
+        {
+          id: "espresso_double",
+          stamp: "FOMO BEFORE THE BELL",
+          body: "Twenty seconds, early FOMO, dumber add. Espresso is not a personality. It just rented one.",
+          lesson: "If SPEED says early, yank like you mean it.",
+        },
+      ],
+      salt,
+    );
   }
 
   if (legs.length === 2) {
@@ -161,12 +217,23 @@ export function pickRoast(input: {
     };
   }
   if (accountantHired && Math.abs(pctOfDesk) < 0.03) {
-    return {
-      id: "accountant_saved",
-      stamp: "HR DID THEIR JOB",
-      body: "The Accountant’s size cap turned a potential blowup into a shrug. Maya is bored. Boredom is a risk control.",
-      lesson: "Caps are unsexy. Caps keep the lights on.",
-    };
+    return perkPick(
+      [
+        {
+          id: "compliance_saved",
+          stamp: "COMPLIANCE SAVED THE DESK",
+          body: "Compliance posters capped the book into a shrug. Maya is bored. Boredom is a risk control.",
+          lesson: "Capped size is unsexy. Caps keep the lights on.",
+        },
+        {
+          id: "compliance_saved",
+          stamp: "POSTERS DID THEIR JOB",
+          body: "The size cap ate the blowup. You still had a day. HR folded into the walls and the walls were right.",
+          lesson: "Caps are a whole-floor perk. That’s the point.",
+        },
+      ],
+      salt,
+    );
   }
   if (Math.abs(pnl) < cash * 0.015) {
     return {
@@ -190,6 +257,10 @@ export function pickRoast(input: {
     body: "Green tape, fragile ego, fictional ticker. Take the win off the table and do not let Maya name a yacht.",
     lesson: "Bank the day. Tomorrow she will try again.",
   };
+}
+
+function perkPick(list: Roast[], salt: number): Roast {
+  return list[Math.abs(salt) % list.length]!;
 }
 
 function twoSeatRoast(
@@ -244,10 +315,10 @@ function twoSeatRoast(
 
   if (accountantHired && Math.abs(pnl) < cash * 0.03) {
     return {
-      id: "accountant_saved",
-      stamp: "HR DID THEIR JOB",
-      body: "Caps on two seats turned a possible blowup into office small talk. The Accountant is insufferable and correct.",
-      lesson: "Caps are unsexy. Caps keep the lights on.",
+      id: "compliance_saved",
+      stamp: "COMPLIANCE SAVED THE DESK",
+      body: "Caps on two seats turned a possible blowup into office small talk. The posters are insufferable and correct.",
+      lesson: "Capped size is unsexy. Caps keep the lights on.",
     };
   }
 
