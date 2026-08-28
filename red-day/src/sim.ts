@@ -158,9 +158,10 @@ export function isFlat(book: LiveBook): boolean {
 }
 
 export function tryRide(day: PreparedDay, book: LiveBook): boolean {
-  if (isFlat(book) || book.rode || book.fomo) return false;
+  if (isFlat(book) || book.rode) return false;
   book.rode = true;
-  if (day.hasAccountant) return true;
+  // Already FOMO-added or HR-capped: tapping Ride endorses the hold, no second add.
+  if (day.hasAccountant || book.fomo) return true;
   addSize(book, book.notional * (YOLO_MULT - 1));
   return true;
 }

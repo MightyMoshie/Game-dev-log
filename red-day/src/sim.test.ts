@@ -75,6 +75,21 @@ describe("sim", () => {
     assert.equal(book.fomo, false);
   });
 
+  it("let them ride still registers after idle FOMO without double-adding", () => {
+    const day = buildDay({ runSeed: 1, day: 1, cash: 10_000, accountantHired: false });
+    const book = newBook(day);
+    day.candles[day.fomoIndex] = {
+      ...day.candles[day.fomoIndex]!,
+      c: day.entry * 0.8,
+      l: day.entry * 0.78,
+    };
+    assert.equal(maybeIdleFomo(day, book, day.fomoIndex), true);
+    const afterFomo = book.notional;
+    assert.equal(tryRide(day, book), true);
+    assert.equal(book.rode, true);
+    assert.equal(book.notional, afterFomo);
+  });
+
   it("let them ride adds size unless capped", () => {
     const raw = buildDay({ runSeed: 3, day: 2, cash: 10_000, accountantHired: false });
     const cap = buildDay({ runSeed: 3, day: 2, cash: 10_000, accountantHired: true });

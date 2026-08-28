@@ -212,7 +212,11 @@ class RedDay {
     const rideBtn = this.root.querySelector<HTMLButtonElement>("#btn-ride");
     if (rideBtn) {
       rideBtn.disabled = true;
-      rideBtn.textContent = this.day.hasAccountant ? "RIDING (CAPPED)" : "RIDING · SIZED UP";
+      rideBtn.textContent = this.day.hasAccountant
+        ? "RIDING (CAPPED)"
+        : this.book.fomo
+          ? "RIDING · SHE ALREADY ADDED"
+          : "RIDING · SIZED UP";
     }
     this.flashPos(this.day.hasAccountant ? "HOLD" : "YOLO ADD");
     const line = this.day.hasAccountant

@@ -3,45 +3,52 @@ import type { MayaMood } from "./copy";
 export function mayaSvg(mood: MayaMood): string {
   const brow =
     mood === "mad"
-      ? `<path d="M70 78 L92 70" stroke="#140c08" stroke-width="5" stroke-linecap="round"/>
-         <path d="M118 70 L140 78" stroke="#140c08" stroke-width="5" stroke-linecap="round"/>`
+      ? `<path d="M68 86 L94 76" stroke="#140c08" stroke-width="6" stroke-linecap="round"/>
+         <path d="M116 76 L144 86" stroke="#140c08" stroke-width="6" stroke-linecap="round"/>`
       : mood === "sweat"
-        ? `<path d="M72 76 L94 80" stroke="#140c08" stroke-width="5" stroke-linecap="round"/>
-           <path d="M116 80 L138 76" stroke="#140c08" stroke-width="5" stroke-linecap="round"/>`
-        : `<path d="M70 80 Q88 72 98 80" stroke="#140c08" stroke-width="5" fill="none" stroke-linecap="round"/>
-           <path d="M112 80 Q122 72 140 80" stroke="#140c08" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+        ? `<path d="M70 84 L96 88" stroke="#140c08" stroke-width="6" stroke-linecap="round"/>
+           <path d="M114 88 L142 84" stroke="#140c08" stroke-width="6" stroke-linecap="round"/>`
+        : `<path d="M68 86 Q88 74 100 86" stroke="#140c08" stroke-width="6" fill="none" stroke-linecap="round"/>
+           <path d="M110 86 Q124 74 144 86" stroke="#140c08" stroke-width="6" fill="none" stroke-linecap="round"/>`;
   const mouth =
     mood === "mad"
-      ? `<path d="M92 128 Q105 118 120 128" stroke="#140c08" stroke-width="5" fill="none" stroke-linecap="round"/>`
+      ? `<path d="M90 136 Q106 124 122 136" stroke="#140c08" stroke-width="6" fill="none" stroke-linecap="round"/>`
       : mood === "sweat"
-        ? `<path d="M96 124 Q106 136 118 124" stroke="#140c08" stroke-width="5" fill="none"/>`
-        : `<path d="M90 122 Q106 142 124 122" stroke="#140c08" stroke-width="5" fill="#140c08"/>
-           <path d="M98 126 Q106 136 114 126" fill="#ff5b7a"/>`;
+        ? `<ellipse cx="106" cy="136" rx="16" ry="10" fill="#f3c7a1" stroke="#140c08" stroke-width="5"/>`
+        : `<path d="M88 128 Q106 152 126 128" stroke="#140c08" stroke-width="6" fill="#140c08"/>
+           <path d="M96 132 Q106 144 116 132" fill="#ff5b7a"/>`;
   const sweat =
     mood === "sweat"
-      ? `<path d="M156 96 q8 14 0 22" fill="#7ec8ff" stroke="#140c08" stroke-width="3"/>`
+      ? `<path d="M164 92 q10 16 0 26" fill="#7ec8ff" stroke="#140c08" stroke-width="3"/>
+         <path d="M172 110 q8 12 0 20" fill="#7ec8ff" stroke="#140c08" stroke-width="3"/>`
       : "";
   const spark =
     mood === "hyped"
-      ? `<text x="168" y="72" font-size="22">✨</text>`
+      ? `<text x="170" y="64" font-size="24">🔥</text>`
       : mood === "smug"
-        ? `<text x="166" y="74" font-size="18">💅</text>`
+        ? `<text x="168" y="66" font-size="20">💅</text>`
         : "";
 
   return `<svg class="char-svg" viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <ellipse cx="110" cy="248" rx="70" ry="10" fill="rgba(20,12,8,0.18)"/>
-    <path d="M48 250 L56 150 Q110 128 164 150 L172 250 Z" fill="#ff3d7a" stroke="#140c08" stroke-width="6"/>
-    <text x="110" y="208" text-anchor="middle" font-family="Bangers, cursive" font-size="22" fill="#fff6e8" stroke="#140c08" stroke-width="4" paint-order="stroke">LFG</text>
-    <circle cx="110" cy="108" r="52" fill="#f3c7a1" stroke="#140c08" stroke-width="6"/>
-    <path d="M58 108 Q54 48 110 40 Q168 48 162 110 Q150 58 110 52 Q72 60 58 108" fill="#2a1a12" stroke="#140c08" stroke-width="4"/>
-    <circle cx="118" cy="36" r="16" fill="#ffd166" stroke="#140c08" stroke-width="4"/>
-    <circle cx="42" cy="118" r="7" fill="#fff6e8" stroke="#140c08" stroke-width="3"/>
-    <circle cx="178" cy="118" r="7" fill="#fff6e8" stroke="#140c08" stroke-width="3"/>
+    <ellipse cx="110" cy="248" rx="72" ry="10" fill="rgba(20,12,8,0.18)"/>
+    <path d="M44 252 L54 148 Q110 122 166 148 L176 252 Z" fill="#ff3d7a" stroke="#140c08" stroke-width="6"/>
+    <path d="M70 168 Q110 158 150 168 L148 252 L72 252 Z" fill="#c2185b" stroke="#140c08" stroke-width="5"/>
+    <text x="110" y="214" text-anchor="middle" font-family="Bangers, cursive" font-size="26" fill="#fff6e8" stroke="#140c08" stroke-width="5" paint-order="stroke">LFG</text>
+    <line x1="86" y1="156" x2="78" y2="188" stroke="#140c08" stroke-width="4" stroke-linecap="round"/>
+    <line x1="134" y1="156" x2="142" y2="188" stroke="#140c08" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="110" cy="112" r="56" fill="#f3c7a1" stroke="#140c08" stroke-width="6"/>
+    <path d="M52 118 Q48 38 110 28 Q174 38 168 118 Q156 48 110 42 Q66 50 52 118" fill="#2a1a12" stroke="#140c08" stroke-width="5"/>
+    <ellipse cx="78" cy="70" rx="22" ry="16" fill="#2a1a12"/>
+    <ellipse cx="142" cy="70" rx="22" ry="16" fill="#2a1a12"/>
+    <circle cx="124" cy="30" r="18" fill="#ffd166" stroke="#140c08" stroke-width="5"/>
+    <circle cx="124" cy="30" r="6" fill="#e31c3d"/>
+    <circle cx="36" cy="122" r="8" fill="#fff6e8" stroke="#140c08" stroke-width="4"/>
+    <circle cx="184" cy="122" r="8" fill="#fff6e8" stroke="#140c08" stroke-width="4"/>
     ${brow}
-    <circle cx="88" cy="100" r="8" fill="#140c08"/>
-    <circle cx="122" cy="100" r="8" fill="#140c08"/>
-    <circle cx="90" cy="98" r="2.5" fill="#fff"/>
-    <circle cx="124" cy="98" r="2.5" fill="#fff"/>
+    <circle cx="86" cy="108" r="9" fill="#140c08"/>
+    <circle cx="124" cy="108" r="9" fill="#140c08"/>
+    <circle cx="88" cy="105" r="3" fill="#fff"/>
+    <circle cx="126" cy="105" r="3" fill="#fff"/>
     ${mouth}
     ${sweat}
     ${spark}
