@@ -453,80 +453,26 @@ body {
   background: #2a1a12;
 }
 
-.room-svg {
+.voxel-host {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.voxel-canvas {
   width: 100%;
   height: 100%;
   display: block;
+  touch-action: manipulation;
 }
 
-.tank-slot {
+.tank-source {
   position: absolute;
-  overflow: hidden;
-  border-radius: 4px;
+  width: 256px;
+  height: 128px;
+  left: -9999px;
+  top: 0;
   pointer-events: none;
-  z-index: 3;
-}
-
-.tank-slot canvas,
-#tape {
-  width: 100%;
-  height: 100%;
-  display: block;
-  min-height: 0;
-}
-
-.tank-shine {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255, 246, 232, 0.22), transparent 40%);
-  pointer-events: none;
-}
-
-.line-layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 4;
-}
-
-.fish-line {
-  stroke: #c2185b;
-  stroke-width: 7;
-  stroke-linecap: round;
-}
-
-.fish-line.jules {
-  stroke: #146056;
-}
-
-.fish-line.selected {
-  stroke: var(--gold);
-  stroke-width: 10;
-}
-
-.fish-line.slack {
-  stroke-dasharray: 14 10;
-}
-
-.fish-line.reeled {
-  stroke-width: 5;
-  opacity: 0.4;
-}
-
-.bobber {
-  fill: var(--red);
-  stroke: var(--ink);
-  stroke-width: 3;
-}
-
-.bobber.jules {
-  fill: var(--jules);
-}
-
-.bobber.off {
-  opacity: 0.15;
 }
 
 .hud {
@@ -572,96 +518,16 @@ body {
   bottom: 8px;
   z-index: 6;
   min-height: 56px;
+  pointer-events: none;
 }
 
-.hit-seat {
+.hr-chip.overlay {
   position: absolute;
-  z-index: 5;
-  background: transparent;
-  border: 3px solid transparent;
-  border-radius: 18px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.world.solo .hit-seat.maya {
-  left: 10%;
-  top: 40%;
-  width: 78%;
-  height: 52%;
-}
-
-.world.duo .hit-seat.maya {
-  left: 2%;
-  top: 48%;
-  width: 52%;
-  height: 46%;
-}
-
-.world.duo .hit-seat.jules {
-  left: 46%;
-  top: 32%;
-  width: 52%;
-  height: 44%;
-}
-
-.hit-seat.selected {
-  box-shadow: inset 0 0 0 4px var(--gold);
-}
-
-.actor {
-  transform-box: fill-box;
-  transform-origin: 50% 80%;
-  transition: transform 0.28s cubic-bezier(0.15, 1.5, 0.4, 1);
-}
-
-.actor.swim {
-  animation: toy-bob 1.35s ease-in-out infinite;
-}
-
-.actor.selected {
-  filter: drop-shadow(0 0 0 var(--gold));
-}
-
-.actor.lean {
-  animation: none;
-  transform: translate(18px, -38px) rotate(-14deg);
-}
-
-.actor.reeled,
-.actor.yanking {
-  animation: none;
-  transform: translate(-42px, 44px) rotate(24deg);
-}
-
-.actor.yanking .rod,
-.actor.reeled .rod {
-  transform-box: fill-box;
-  transform-origin: 42px 32px;
-  transform: rotate(18deg);
-}
-
-@keyframes toy-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.splash.go ellipse {
-  animation: splash-pop 0.4s ease-out;
-}
-
-@keyframes splash-pop {
-  0% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-  }
+  left: 10px;
+  bottom: 72px;
+  z-index: 6;
+  color: var(--gold);
+  pointer-events: none;
 }
 
 .floor-dock {
@@ -885,9 +751,6 @@ body {
   .wordmark .splat,
   .wordmark .day {
     font-size: 64px;
-  }
-  #tape {
-    min-height: 0;
   }
   .btn {
     font-size: 22px;

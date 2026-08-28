@@ -15,7 +15,7 @@ export function bootScreen(existing: DeskSave | null): string {
         <span class="day">DAY</span>
       </div>
       <p class="tag">You don’t trade. You babysit.</p>
-      <p class="subtag">Tiny cartoon prop office. Trainees on fishing lines. Risk is the joke and the lesson.</p>
+      <p class="subtag">Tiny voxel office. Trainees on fishing lines. Risk is the joke and the lesson.</p>
       <label class="field">
         <span>Desk name</span>
         <input id="desk-name" maxlength="28" value="${escapeHtml(named)}" autocomplete="off" />

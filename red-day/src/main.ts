@@ -2,7 +2,8 @@ import "./style.css";
 import * as audio from "./audio";
 import { drawChart } from "./chart";
 import { BANKS, Talker, type SeatId } from "./quotes";
-import { poseFor, setActorPose, splash, syncTankSlot, updateLines } from "./office";
+import { poseFor } from "./office";
+import { VoxelOffice } from "./voxel";
 import {
   bellScreen,
   briefScreen,
@@ -59,6 +60,7 @@ class RedDay {
   private lastHrAt = 0;
   private lastYankId: string | null = null;
   private talkers = new Map<string, Talker>();
+  private voxel: VoxelOffice | null = null;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -150,7 +152,17 @@ class RedDay {
 
   private openFloor(): void {
     if (!this.save || !this.day) return;
+    this.voxel?.dispose();
+    this.voxel = null;
     this.root.innerHTML = floorScreen(this.save, this.day);
+    const host = this.root.querySelector<HTMLElement>("#voxel-host");
+    if (host) {
+      this.voxel = new VoxelOffice(host, {
+        seats: this.day.seats.map((s) => s.id),
+        accountant: this.save.accountantHired,
+        onSelect: (id) => this.select(id),
+      });
+    }
     this.talkers = new Map([
       ["maya", new Talker(BANKS.maya.idle)],
       ["jules", new Talker(BANKS.jules.idle)],
@@ -212,7 +224,19 @@ class RedDay {
         gold: GOLD,
       }).hook;
     }
-    syncTankSlot(this.root);
+
+    this.voxel?.sync({
+      tape: canvas,
+      hook,
+      seats: this.books.map((book) => ({
+        id: book.seatId,
+        pose: poseFor(book),
+        selected: book.seatId === this.selected,
+        yanked: book.yankedAt != null,
+        slack: Boolean(book.rode || book.fomo),
+        yanking: this.lastYankId === book.seatId,
+      })),
+    });
 
     const left = Math.max(0, Math.ceil((FLOOR_MS - elapsed) / 1000));
     const clock = this.root.querySelector("#clock");
@@ -232,19 +256,6 @@ class RedDay {
       const state = sel.yankedAt != null ? "FLAT" : sel.rode || sel.fomo ? "SLACK" : "SWIMMING";
       pos.textContent = `${sel.name.toUpperCase()} ${state} · ${money(sel.notional)} · ${this.day.ticker}`;
     }
-
-    for (const book of this.books) {
-      const pnl = unrealized(this.day, book, index);
-      setActorPose(
-        this.root,
-        book,
-        book.seatId === this.selected,
-        signedMoney(pnl),
-        poseFor(book),
-        this.lastYankId === book.seatId,
-      );
-    }
-    updateLines(this.root, this.books, this.selected, hook);
 
     if (index !== this.lastTickCandle) {
       this.lastTickCandle = index;
@@ -300,7 +311,7 @@ class RedDay {
     if (!tryYank(this.day, book, index)) return;
     audio.yank();
     this.lastYankId = book.seatId;
-    splash(this.root);
+    this.voxel?.splash();
     this.flashPos(`${book.name.toUpperCase()} REELED`);
     this.speak(book.seatId, "yank");
     const other = this.books.find((b) => b.seatId !== book.seatId && b.yankedAt == null);
@@ -385,6 +396,8 @@ class RedDay {
   private stopFloor(): void {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = 0;
+    this.voxel?.dispose();
+    this.voxel = null;
   }
 }
 

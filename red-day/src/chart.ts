@@ -18,15 +18,22 @@ export function drawChart(
 ): { hook: { x: number; y: number } | null } {
   const ctx = canvas.getContext("2d");
   if (!ctx) return { hook: null };
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const cssW = canvas.clientWidth;
-  const cssH = canvas.clientHeight;
+  const useCss = canvas.clientWidth >= 2 && canvas.clientHeight >= 2;
+  const dpr = opts.embedded || !useCss ? 1 : Math.max(1, window.devicePixelRatio || 1);
+  const cssW = useCss ? canvas.clientWidth : canvas.width || 256;
+  const cssH = useCss ? canvas.clientHeight : canvas.height || 128;
   if (cssW < 2 || cssH < 2) return { hook: null };
-  if (canvas.width !== Math.floor(cssW * dpr) || canvas.height !== Math.floor(cssH * dpr)) {
-    canvas.width = Math.floor(cssW * dpr);
-    canvas.height = Math.floor(cssH * dpr);
+  if (opts.embedded) {
+    if (canvas.width !== cssW) canvas.width = cssW;
+    if (canvas.height !== cssH) canvas.height = cssH;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  } else {
+    if (canvas.width !== Math.floor(cssW * dpr) || canvas.height !== Math.floor(cssH * dpr)) {
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cssW, cssH);
 
   if (opts.embedded) {
