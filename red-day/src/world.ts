@@ -89,11 +89,12 @@ function actor(who: SeatId, tx: number, ty: number, scale: number): string {
          <rect x="-28" y="-4" width="56" height="10" rx="5" fill="none" stroke="${INK}" stroke-width="4"/>
          <line x1="0" y1="-4" x2="0" y2="8" stroke="${INK}" stroke-width="4"/>`;
 
-  return `<g id="actor-${who}" class="actor swim" data-seat="${who}" transform="translate(${tx} ${ty}) scale(${scale})">
+  return `<g class="actor-slot" transform="translate(${tx} ${ty}) scale(${scale})">
+    <g id="actor-${who}" class="actor swim" data-seat="${who}">
     <ellipse cx="0" cy="118" rx="78" ry="16" fill="rgba(20,12,8,0.22)"/>
-    ${isoBox(-6, 78, 96, 52, 26, deskTop, "#6a4e2c", "#8a6a3e")}
-    ${isoBox(-4, 92, 36, 22, 34, hoodie, hoodieDark, hoodie)}
-    <circle cx="8" cy="8" r="40" fill="#f3c7a1" stroke="${INK}" stroke-width="6"/>
+    ${isoBox(-6, 78, 120, 64, 34, deskTop, "#6a4e2c", "#8a6a3e")}
+    ${isoBox(-4, 92, 48, 28, 42, hoodie, hoodieDark, hoodie)}
+    <circle cx="10" cy="0" r="48" fill="#f3c7a1" stroke="${INK}" stroke-width="7"/>
     ${hair}
     <circle cx="-8" cy="6" r="6" fill="${INK}"/>
     <circle cx="12" cy="6" r="6" fill="${INK}"/>
@@ -112,11 +113,12 @@ function actor(who: SeatId, tx: number, ty: number, scale: number): string {
       <text x="0" y="138" text-anchor="middle" font-family="Bangers, cursive" font-size="20" fill="${INK}">${name}</text>
     </g>
     <text id="pnl-${who}" class="seat-pnl-svg" x="0" y="158" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" font-weight="800" fill="${INK}">$0</text>
+  </g>
   </g>`;
 }
 
 function accountantNook(): string {
-  return `<g id="actor-accountant" class="actor acc">
+  return `<g id="actor-accountant" class="acc">
     ${isoBox(48, 390, 44, 28, 40, NAVY, "#12182c", "#2c3e6b")}
     <circle cx="48" cy="348" r="20" fill="#e8c4a0" stroke="${INK}" stroke-width="4"/>
     <rect x="32" y="344" width="32" height="7" rx="3" fill="none" stroke="${INK}" stroke-width="3"/>
@@ -132,9 +134,9 @@ export function officeWorldSvg(opts: {
   accountant: boolean;
   ticker: string;
 }): string {
-  const maya = opts.duo ? actor("maya", 112, 478, 1.05) : actor("maya", 168, 456, 1.22);
+  const maya = opts.duo ? actor("maya", 118, 430, 1.12) : actor("maya", 178, 400, 1.32);
   const jules = opts.duo ? actor("jules", 252, 392, 0.98) : "";
-  return `<svg class="room-svg" id="room-svg" viewBox="0 0 360 640" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  return `<svg class="room-svg" id="room-svg" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
       <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#5a3824"/>
