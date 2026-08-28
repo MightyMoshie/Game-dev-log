@@ -448,6 +448,7 @@ body {
 .world {
   position: relative;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
   background: #2a1a12;
 }
@@ -492,7 +493,7 @@ body {
 
 .fish-line {
   stroke: #c2185b;
-  stroke-width: 6;
+  stroke-width: 7;
   stroke-linecap: round;
 }
 
@@ -502,16 +503,16 @@ body {
 
 .fish-line.selected {
   stroke: var(--gold);
-  stroke-width: 8;
+  stroke-width: 10;
 }
 
 .fish-line.slack {
-  stroke-dasharray: 10 8;
+  stroke-dasharray: 14 10;
 }
 
 .fish-line.reeled {
-  stroke-width: 4;
-  opacity: 0.35;
+  stroke-width: 5;
+  opacity: 0.4;
 }
 
 .bobber {
@@ -584,24 +585,24 @@ body {
 }
 
 .world.solo .hit-seat.maya {
-  left: 12%;
-  top: 42%;
-  width: 76%;
-  height: 46%;
+  left: 10%;
+  top: 40%;
+  width: 78%;
+  height: 52%;
 }
 
 .world.duo .hit-seat.maya {
   left: 2%;
-  top: 50%;
+  top: 48%;
   width: 52%;
-  height: 42%;
+  height: 46%;
 }
 
 .world.duo .hit-seat.jules {
   left: 46%;
-  top: 34%;
+  top: 32%;
   width: 52%;
-  height: 40%;
+  height: 44%;
 }
 
 .hit-seat.selected {
@@ -618,15 +619,26 @@ body {
   animation: toy-bob 1.35s ease-in-out infinite;
 }
 
+.actor.selected {
+  filter: drop-shadow(0 0 0 var(--gold));
+}
+
 .actor.lean {
   animation: none;
-  transform: translate(10px, -24px) rotate(-8deg);
+  transform: translate(18px, -38px) rotate(-14deg);
 }
 
 .actor.reeled,
 .actor.yanking {
   animation: none;
-  transform: translate(-22px, 22px) rotate(16deg);
+  transform: translate(-42px, 44px) rotate(24deg);
+}
+
+.actor.yanking .rod,
+.actor.reeled .rod {
+  transform-box: fill-box;
+  transform-origin: 42px 32px;
+  transform: rotate(18deg);
 }
 
 @keyframes toy-bob {

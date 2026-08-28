@@ -20,7 +20,7 @@ export function officeMarkup(opts: {
     .map(
       (seat) =>
         `<path id="line-${seat.id}" class="fish-line ${seat.id}" d="" fill="none"/>
-         <circle id="bobber-${seat.id}" class="bobber ${seat.id}" r="8"/>`,
+         <circle id="bobber-${seat.id}" class="bobber ${seat.id}" r="11"/>`,
     )
     .join("");
   return `
@@ -121,9 +121,9 @@ export function updateLines(
     const hooked = book.yankedAt == null;
     const x2 = hooked
       ? tank.left - o.left + (hook?.x ?? tank.width * (0.62 + i * 0.12))
-      : x1 + 22;
-    const y2 = hooked ? tank.top - o.top + (hook?.y ?? tank.height * 0.55) : y1 - 16;
-    const slack = hooked ? (book.rode || book.fomo ? 90 : 36) : 8;
+      : x1 + 56;
+    const y2 = hooked ? tank.top - o.top + (hook?.y ?? tank.height * 0.55) : y1 + 18;
+    const slack = hooked ? (book.rode || book.fomo ? 130 : 28) : 6;
     const mx = (x1 + x2) / 2 + (book.seatId === "jules" ? 22 : -14);
     const my = Math.max(y1, y2) + slack;
     path.setAttribute("d", `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`);
