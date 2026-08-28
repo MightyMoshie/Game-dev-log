@@ -43,7 +43,7 @@ export const JULES_QUOTES: QuoteBank = {
     "Can we size down. Asking for a friend. The friend is me.",
     "The tape is data. I am also data. We should collaborate.",
     "I muted the group chat. I can still hear it in my bones.",
-    "Mean reversion is science until it isn’t. Anyway I’m in.",
+    "If they’re cheering, I’m fading. That’s the whole model.",
   ],
   yank: [
     "You reeled me. My model had one more candle. ONE.",
@@ -55,8 +55,8 @@ export const JULES_QUOTES: QuoteBank = {
     "We’re letting it breathe. Breathing is a strategy. Allegedly.",
   ],
   fomo: [
-    "It’s going up. I was early, which is the same as right, later.",
-    "Chasing? No. I’m confirming. Confirmation looks like this.",
+    "It’s going up. I’m fading it. That’s the model, not a feeling.",
+    "Chasing? No. I’m confirming the fade. Confirmation looks like this.",
   ],
 };
 

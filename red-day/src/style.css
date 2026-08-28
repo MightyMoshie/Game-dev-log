@@ -441,7 +441,7 @@ body {
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0;
   padding: 0;
-  background: #2a1a12;
+  background: #0c1428;
   animation: none;
 }
 
@@ -450,7 +450,7 @@ body {
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  background: #2a1a12;
+  background: #0c1428;
 }
 
 .voxel-host {
@@ -475,6 +475,11 @@ body {
   pointer-events: none;
 }
 
+.jumbo-source {
+  width: 640px;
+  height: 320px;
+}
+
 .hud {
   position: absolute;
   top: 8px;
@@ -488,8 +493,8 @@ body {
 }
 
 .hud-chip {
-  background: var(--ink);
-  color: var(--foam);
+  background: #0c1428;
+  color: #f4f7fb;
   border: 3px solid var(--gold);
   border-radius: 12px;
   padding: 4px 8px;
@@ -532,7 +537,7 @@ body {
 
 .floor-dock {
   padding: 8px 10px 12px;
-  background: var(--ink);
+  background: #0c1428;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -556,10 +561,45 @@ body {
   font-size: 11px;
   font-weight: 800;
   text-align: center;
-  background: #2a1a12;
+  background: #152038;
   color: var(--gold);
   border-radius: 10px;
   padding: 7px;
+}
+
+.btn.panic {
+  background: var(--red);
+  color: var(--foam);
+  font-size: 22px;
+  width: 100%;
+}
+
+.badge.short {
+  background: var(--navy);
+}
+
+.upgrade-swatch {
+  width: 72px;
+  height: 72px;
+  border: 4px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.upgrade-swatch.posters {
+  background:
+    linear-gradient(#e31c3d 0 18%, #f4f7fb 18% 100%);
+}
+
+.upgrade-swatch.espresso {
+  background:
+    radial-gradient(circle at 50% 38%, var(--gold) 0 18%, transparent 19%),
+    var(--navy);
+}
+
+.upgrade-swatch.research {
+  background:
+    linear-gradient(135deg, #7ec8e8 0 40%, var(--gold) 40% 48%, var(--navy) 48%);
 }
 
 .pos.flash {

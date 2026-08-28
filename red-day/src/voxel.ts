@@ -1,35 +1,28 @@
 import * as THREE from "three";
 import type { SeatId } from "./quotes";
 import type { Pose } from "./office";
+import type { FloorUpgrades } from "./state";
 
-/** Crossy Road / Qubicle palette as voxel face colors. */
 const C = {
-  ink: 0x140c08,
-  paper: 0xf4e4c1,
-  paper2: 0xc9a56e,
-  foam: 0xfff6e8,
-  red: 0xe31c3d,
+  navy: 0x1b2744,
+  navyMid: 0x243656,
+  navyDark: 0x0c1428,
+  white: 0xf4f7fb,
+  glass: 0x7ec8e8,
+  glassDeep: 0x1a3a52,
   gold: 0xf0b429,
+  red: 0xe31c3d,
+  ink: 0x0a101c,
   maya: 0xff3d7a,
   mayaDark: 0xc2185b,
   jules: 0x1f8a7a,
   julesDark: 0x146056,
-  navy: 0x1b2744,
-  navyDark: 0x12182c,
-  wood: 0xc4a574,
-  woodDark: 0x6a4e2c,
-  woodMid: 0x8a6a3e,
-  wall: 0x5a3824,
-  wallDark: 0x3a2418,
-  wallDeep: 0x24140e,
   skin: 0xf3c7a1,
   hair: 0x2a1a12,
   green: 0x1f8a4c,
   green2: 0x176b38,
-  green3: 0x2d9a58,
-  water: 0x163a44,
-  sky: 0x7ec8e8,
-  sky2: 0xc8f0f8,
+  night: 0x0a1224,
+  window: 0xf0b429,
 };
 
 const UNIT = new THREE.BoxGeometry(1, 1, 1);
@@ -83,11 +76,13 @@ type SeatRig = {
   beads: THREE.Mesh[];
   lineColor: number;
   deskPad: THREE.Mesh;
+  yankT: number;
+  tile: THREE.Vector3;
 };
 
-const BEADS = 16;
+const BEADS = 14;
 
-/** Orthographic vector-voxel office. The playfield is a 3D diorama. */
+/** Navy / glass high-rise floor. Jumbotron on the back wall. */
 export class VoxelOffice {
   private host: HTMLElement;
   private scene = new THREE.Scene();
@@ -96,87 +91,76 @@ export class VoxelOffice {
   private sun: THREE.DirectionalLight;
   private ray = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
-  private tankTex: THREE.CanvasTexture | null = null;
-  private tankGlass: THREE.Mesh;
-  private tankOrigin = new THREE.Vector3(0, 2.55, -4.42);
-  private tankSize = { w: 2.6, h: 1.35 };
-  private splashMesh: THREE.Mesh;
-  private splashUntil = 0;
+  private jumboTex: THREE.CanvasTexture | null = null;
+  private jumboGlass: THREE.Mesh;
+  private jumboOrigin = new THREE.Vector3(0, 2.82, -4.48);
+  private jumboSize = { w: 5.5, h: 2.2 };
   private seats = new Map<SeatId, SeatRig>();
   private ro: ResizeObserver;
   private onSelect: (id: SeatId) => void;
+  private onPanic: () => void;
   private disposed = false;
   private tmpA = new THREE.Vector3();
   private tmpB = new THREE.Vector3();
   private tmpM = new THREE.Vector3();
+  private duo: boolean;
 
   constructor(
     host: HTMLElement,
     opts: {
       seats: SeatId[];
-      accountant: boolean;
+      upgrades: FloorUpgrades;
       onSelect: (id: SeatId) => void;
+      onPanic: () => void;
     },
   ) {
     this.host = host;
     this.onSelect = opts.onSelect;
-    this.scene.background = new THREE.Color(0x2a1a12);
+    this.onPanic = opts.onPanic;
+    this.duo = opts.seats.length > 1;
+    this.scene.background = new THREE.Color(C.night);
 
-    const view = 6.6;
-    this.camera = new THREE.OrthographicCamera(-view, view, view, -view, 0.1, 80);
-    const focus = new THREE.Vector3(0.15, 1.45, 0.7);
+    const view = 6.8;
+    this.camera = new THREE.OrthographicCamera(-view, view, view, -view, 0.1, 90);
+    const focus = new THREE.Vector3(0.1, 1.55, 0.55);
     const dist = 18;
     this.camera.position.set(focus.x + dist, focus.y + dist, focus.z + dist);
     this.camera.lookAt(focus);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, failIfMajorPerformanceCaveat: false });
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    this.renderer.setClearColor(0x2a1a12, 1);
+    this.renderer.setClearColor(C.night, 1);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.domElement.className = "voxel-canvas";
     host.appendChild(this.renderer.domElement);
 
-    this.scene.add(new THREE.AmbientLight(0xf4e4c1, 0.72));
-    this.sun = new THREE.DirectionalLight(0xfff6e8, 1.18);
-    this.sun.position.set(-7, 16, 5);
+    this.scene.add(new THREE.AmbientLight(0xb8c4e0, 0.62));
+    this.sun = new THREE.DirectionalLight(0xe8f0ff, 1.12);
+    this.sun.position.set(-6, 16, 6);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
-    this.sun.shadow.camera.left = -10;
-    this.sun.shadow.camera.right = 10;
-    this.sun.shadow.camera.top = 10;
-    this.sun.shadow.camera.bottom = -10;
+    this.sun.shadow.camera.left = -11;
+    this.sun.shadow.camera.right = 11;
+    this.sun.shadow.camera.top = 11;
+    this.sun.shadow.camera.bottom = -11;
     this.sun.shadow.camera.near = 1;
-    this.sun.shadow.camera.far = 40;
+    this.sun.shadow.camera.far = 42;
     this.scene.add(this.sun);
 
-    this.buildRoom();
-    this.tankGlass = this.buildTank();
-    const splashMat = new THREE.MeshLambertMaterial({
-      color: C.foam,
-      flatShading: true,
-      transparent: true,
-      opacity: 1,
-      depthWrite: false,
-    });
-    this.splashMesh = new THREE.Mesh(UNIT, splashMat);
-    this.splashMesh.position.set(this.tankOrigin.x, this.tankOrigin.y, this.tankOrigin.z + 0.22);
-    this.splashMesh.castShadow = false;
-    this.splashMesh.visible = false;
-    this.scene.add(this.splashMesh);
+    this.buildRoom(opts.upgrades);
+    this.jumboGlass = this.buildJumbo(opts.upgrades.research);
 
-    if (opts.accountant) this.buildAccountant();
-
-    const duo = opts.seats.length > 1;
     for (const id of opts.seats) {
       const pos =
         id === "maya"
-          ? duo
-            ? new THREE.Vector3(1.35, 0, 2.55)
-            : new THREE.Vector3(0.35, 0, 2.45)
-          : new THREE.Vector3(-1.45, 0, 1.35);
-      this.seats.set(id, this.buildSeat(id, pos, id === "jules" ? 1.02 : duo ? 1.1 : 1.32));
+          ? this.duo
+            ? new THREE.Vector3(1.4, 0, 2.5)
+            : new THREE.Vector3(0.25, 0, 2.4)
+          : new THREE.Vector3(-1.5, 0, 1.45);
+      const tile = this.tilePos(id, opts.seats.length);
+      this.seats.set(id, this.buildSeat(id, pos, id === "jules" ? 1.02 : this.duo ? 1.08 : 1.28, tile));
     }
 
     this.ro = new ResizeObserver(() => this.resize());
@@ -186,49 +170,46 @@ export class VoxelOffice {
   }
 
   splash(): void {
-    this.splashUntil = performance.now() + 380;
-    this.splashMesh.visible = true;
-    this.splashMesh.scale.set(0.45, 0.16, 0.45);
-    (this.splashMesh.material as THREE.MeshLambertMaterial).opacity = 1;
+    /* yank-from-chair is the splash now */
   }
 
   sync(opts: {
     seats: SeatSync[];
-    hook: { x: number; y: number } | null;
-    tape: HTMLCanvasElement | null;
+    jumbo: HTMLCanvasElement | null;
   }): void {
     if (this.disposed) return;
-    if (opts.tape) this.paintTank(opts.tape);
-
+    if (opts.jumbo) this.paintJumbo(opts.jumbo);
     const t = performance.now();
-    if (this.splashUntil > t) {
-      const k = 1 - (this.splashUntil - t) / 380;
-      const s = 0.4 + k * 1.6;
-      this.splashMesh.visible = true;
-      this.splashMesh.scale.set(s, 0.35 + k, s);
-      (this.splashMesh.material as THREE.MeshLambertMaterial).opacity = 1 - k;
-      (this.splashMesh.material as THREE.MeshLambertMaterial).transparent = true;
-    } else {
-      this.splashMesh.visible = false;
-    }
 
     for (const seat of opts.seats) {
       const rig = this.seats.get(seat.id);
       if (!rig) continue;
-      const bob = seat.pose === "swim" ? Math.sin(t / 220) * 0.06 : 0;
-      rig.pose.position.y = bob;
-      const targetX = seat.pose === "lean" || seat.slack ? -0.38 : seat.pose === "reeled" || seat.yanking ? 0.48 : 0;
-      const targetZ = seat.pose === "lean" || seat.slack ? -0.08 : seat.pose === "reeled" || seat.yanking ? 0.12 : 0;
-      rig.pose.rotation.x += (targetX - rig.pose.rotation.x) * 0.18;
-      rig.pose.rotation.z += (targetZ - rig.pose.rotation.z) * 0.18;
+      if ((seat.yanked || seat.yanking) && rig.yankT === 0) rig.yankT = t;
+      if (!seat.yanked && !seat.yanking) rig.yankT = 0;
+
+      const yanked = seat.pose === "reeled" || seat.yanking;
+      const glued = seat.pose === "lean" || seat.slack;
+      const k = yanked && rig.yankT ? Math.min(1, (t - rig.yankT) / 280) : 0;
+      const bob = seat.pose === "swim" ? Math.sin(t / 220) * 0.05 : 0;
+
+      if (yanked) {
+        rig.pose.position.y += (0.95 * k + bob - rig.pose.position.y) * 0.22;
+        rig.pose.position.z += (1.55 * k - rig.pose.position.z) * 0.22;
+        rig.pose.rotation.x += (0.95 * k - rig.pose.rotation.x) * 0.2;
+        rig.pose.rotation.z += (0.28 * k - rig.pose.rotation.z) * 0.2;
+      } else if (glued) {
+        rig.pose.position.y += (bob - rig.pose.position.y) * 0.2;
+        rig.pose.position.z += (-0.16 - rig.pose.position.z) * 0.18;
+        rig.pose.rotation.x += (-0.42 - rig.pose.rotation.x) * 0.16;
+        rig.pose.rotation.z += (0 - rig.pose.rotation.z) * 0.16;
+      } else {
+        rig.pose.position.y += (bob - rig.pose.position.y) * 0.2;
+        rig.pose.position.z += (0 - rig.pose.position.z) * 0.16;
+        rig.pose.rotation.x += (0 - rig.pose.rotation.x) * 0.16;
+        rig.pose.rotation.z += (0 - rig.pose.rotation.z) * 0.16;
+      }
       rig.deskPad.visible = seat.selected;
-      this.updateLine(
-        rig,
-        seat,
-        opts.hook,
-        opts.seats.findIndex((s) => s.id === seat.id),
-        opts.tape,
-      );
+      this.updateLine(rig, seat);
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -238,9 +219,18 @@ export class VoxelOffice {
     this.disposed = true;
     this.ro.disconnect();
     this.host.removeEventListener("pointerdown", this.onPointer);
-    this.tankTex?.dispose();
+    this.jumboTex?.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+  }
+
+  private tilePos(id: SeatId, count: number): THREE.Vector3 {
+    const { w, h } = this.jumboSize;
+    const y = this.jumboOrigin.y;
+    const z = this.jumboOrigin.z + 0.22;
+    if (count < 2) return new THREE.Vector3(this.jumboOrigin.x, y, z);
+    const x = id === "maya" ? this.jumboOrigin.x - w * 0.24 : this.jumboOrigin.x + w * 0.24;
+    return new THREE.Vector3(x, y - h * 0.08, z);
   }
 
   private onPointer = (ev: PointerEvent): void => {
@@ -254,6 +244,10 @@ export class VoxelOffice {
     for (const hit of hits) {
       let o: THREE.Object3D | null = hit.object;
       while (o) {
+        if (o.userData.panic) {
+          this.onPanic();
+          return;
+        }
         const seat = o.userData.seat as SeatId | undefined;
         if (seat === "maya" || seat === "jules") {
           this.onSelect(seat);
@@ -268,7 +262,7 @@ export class VoxelOffice {
     const w = Math.max(1, this.host.clientWidth);
     const h = Math.max(1, this.host.clientHeight);
     const aspect = w / h;
-    const viewH = 6.55;
+    const viewH = 6.7;
     this.camera.left = -viewH * aspect;
     this.camera.right = viewH * aspect;
     this.camera.top = viewH;
@@ -278,114 +272,137 @@ export class VoxelOffice {
     this.renderer.render(this.scene, this.camera);
   }
 
-  private paintTank(canvas: HTMLCanvasElement): void {
-    if (!this.tankTex) {
-      this.tankTex = new THREE.CanvasTexture(canvas);
-      this.tankTex.colorSpace = THREE.SRGBColorSpace;
-      this.tankTex.minFilter = THREE.LinearFilter;
-      this.tankTex.magFilter = THREE.LinearFilter;
-      const mats = this.tankGlass.material as THREE.MeshLambertMaterial[];
-      mats[4].map = this.tankTex;
+  private paintJumbo(canvas: HTMLCanvasElement): void {
+    if (!this.jumboTex) {
+      this.jumboTex = new THREE.CanvasTexture(canvas);
+      this.jumboTex.colorSpace = THREE.SRGBColorSpace;
+      this.jumboTex.minFilter = THREE.LinearFilter;
+      this.jumboTex.magFilter = THREE.LinearFilter;
+      const mats = this.jumboGlass.material as THREE.MeshLambertMaterial[];
+      mats[4].map = this.jumboTex;
       mats[4].color.set(0xffffff);
       mats[4].needsUpdate = true;
     }
-    this.tankTex.needsUpdate = true;
+    this.jumboTex.needsUpdate = true;
   }
 
-  private buildRoom(): void {
+  private buildRoom(upgrades: FloorUpgrades): void {
     const root = new THREE.Group();
     this.scene.add(root);
 
     for (let z = -4; z <= 4; z++) {
       for (let x = -3; x <= 3; x++) {
         const light = (x + z) % 2 === 0;
-        box(root, 0.92, 0.3, 0.92, light ? C.paper : C.paper2, x, 0.15, z);
+        box(root, 0.92, 0.28, 0.92, light ? C.white : C.navyMid, x, 0.14, z);
       }
     }
 
-    box(root, 7.4, 4.3, 0.42, C.wall, 0, 2.25, -4.72);
-    box(root, 7.4, 0.28, 0.48, C.wallDark, 0, 0.36, -4.72);
-    box(root, 0.42, 4.3, 9.4, C.wallDark, -3.72, 2.25, 0);
-    box(root, 0.48, 0.28, 9.4, C.ink, -3.72, 0.36, 0);
-    box(root, 0.42, 4.3, 1.8, C.wallDeep, 3.72, 2.25, -3.8);
-    box(root, 0.48, 0.28, 1.8, C.ink, 3.72, 0.36, -3.8);
+    this.skyline(root);
 
-    box(root, 0.9, 0.9, 0.12, C.sky, -3.48, 2.7, -2.2);
-    box(root, 0.9, 0.9, 0.12, C.sky2, -3.48, 2.7, -1.2);
-    box(root, 0.9, 0.9, 0.12, C.sky2, -3.48, 1.7, -2.2);
-    box(root, 0.9, 0.9, 0.12, C.sky, -3.48, 1.7, -1.2);
-    box(root, 0.12, 2.1, 0.12, C.ink, -3.44, 2.2, -1.7);
-    box(root, 2.05, 0.12, 0.12, C.ink, -3.44, 2.2, -1.7);
+    box(root, 1.8, 4.6, 0.36, C.navy, -2.85, 2.35, -4.78);
+    box(root, 1.8, 4.6, 0.36, C.navy, 2.85, 2.35, -4.78);
+    box(root, 7.4, 0.7, 0.36, C.navy, 0, 4.4, -4.78);
+    box(root, 7.4, 0.32, 0.42, C.gold, 0, 0.32, -4.78);
+    box(root, 0.42, 4.6, 9.4, C.navyDark, -3.72, 2.35, 0);
+    box(root, 0.48, 0.28, 9.4, C.ink, -3.72, 0.32, 0);
+    box(root, 0.42, 4.6, 1.7, C.navy, 3.72, 2.35, -3.85);
+    box(root, 0.48, 0.28, 1.7, C.ink, 3.72, 0.32, -3.85);
 
-    box(root, 0.7, 0.7, 0.16, C.foam, 2.55, 3.15, -4.48);
-    box(root, 0.18, 0.22, 0.08, C.ink, 2.55, 3.28, -4.38);
-    box(root, 0.22, 0.08, 0.08, C.red, 2.68, 3.15, -4.38);
+    box(root, 0.12, 2.4, 1.8, C.glass, -3.48, 2.5, -1.6);
+    box(root, 0.08, 2.4, 0.08, C.gold, -3.44, 2.5, -1.6);
+    box(root, 0.08, 0.08, 1.8, C.gold, -3.44, 2.5, -1.6);
 
-    this.plant(root, -2.85, -3.7);
-    this.plant(root, 2.9, -3.55);
-    this.plant(root, -2.9, 3.4);
+    box(root, 0.55, 0.55, 0.55, C.green, -2.9, 0.85, -3.55);
+    box(root, 0.4, 0.4, 0.4, C.green2, -2.7, 1.2, -3.4);
+    box(root, 0.48, 0.28, 0.48, C.white, -2.9, 0.42, -3.55);
 
-    box(root, 0.55, 1.15, 0.55, C.navy, -2.9, 0.7, 2.35);
-    box(root, 0.42, 0.38, 0.42, C.sky, -2.9, 1.48, 2.35);
-    box(root, 0.22, 0.18, 0.22, C.sky2, -2.9, 1.72, 2.35);
-    box(root, 0.16, 0.22, 0.16, C.gold, -2.72, 0.85, 2.35);
+    box(root, 0.55, 0.55, 0.55, C.green, 2.85, 0.85, -3.4);
+    box(root, 0.38, 0.38, 0.38, C.green2, 3.05, 1.18, -3.25);
+    box(root, 0.48, 0.28, 0.48, C.white, 2.85, 0.42, -3.4);
 
-    box(root, 0.7, 1.35, 0.7, C.wood, 2.95, 0.8, 2.6);
-    box(root, 0.5, 0.16, 0.12, C.paper, 2.95, 1.05, 2.28);
-    box(root, 0.5, 0.16, 0.12, C.paper2, 2.95, 0.72, 2.28);
-    box(root, 0.1, 0.1, 0.08, C.gold, 2.95, 1.05, 2.22);
-    box(root, 0.1, 0.1, 0.08, C.gold, 2.95, 0.72, 2.22);
+    const panic = box(root, 0.95, 0.85, 0.95, C.red, 2.55, 0.55, 3.35);
+    panic.userData.panic = true;
+    box(root, 1.05, 0.1, 1.05, C.gold, 2.55, 0.14, 3.35).userData.panic = true;
+    box(root, 0.28, 0.18, 0.28, C.white, 2.55, 1.08, 3.35).userData.panic = true;
+
+    if (upgrades.compliance) {
+      box(root, 0.08, 1.1, 0.7, C.white, -3.48, 2.4, 1.4);
+      box(root, 0.1, 0.18, 0.7, C.red, -3.46, 2.85, 1.4);
+      box(root, 0.08, 0.9, 0.55, C.white, -3.48, 2.2, 2.3);
+      box(root, 0.1, 0.14, 0.55, C.gold, -3.46, 2.55, 2.3);
+    }
+    if (upgrades.espresso) {
+      box(root, 0.7, 0.85, 0.55, C.navy, -2.85, 0.62, 2.55);
+      box(root, 0.35, 0.35, 0.35, C.gold, -2.85, 1.22, 2.55);
+      box(root, 0.18, 0.28, 0.18, C.white, -2.62, 0.7, 2.55);
+    } else {
+      box(root, 0.5, 1.05, 0.5, C.navyMid, -2.85, 0.7, 2.55);
+      box(root, 0.32, 0.22, 0.32, C.glass, -2.85, 1.32, 2.55);
+    }
   }
 
-  private plant(parent: THREE.Object3D, x: number, z: number): void {
-    box(parent, 0.48, 0.38, 0.48, C.woodMid, x, 0.31, z);
-    box(parent, 0.55, 0.18, 0.55, C.woodDark, x, 0.48, z);
-    box(parent, 0.55, 0.55, 0.55, C.green, x, 0.88, z);
-    box(parent, 0.4, 0.4, 0.4, C.green2, x + 0.28, 1.12, z);
-    box(parent, 0.38, 0.38, 0.38, C.green3, x - 0.22, 1.18, z + 0.18);
-    box(parent, 0.32, 0.32, 0.32, C.green, x, 1.42, z - 0.12);
+  private skyline(parent: THREE.Object3D): void {
+    const z = -6.4;
+    const towers = [
+      [-2.6, 3.2, 1.1],
+      [-1.2, 4.6, 1.3],
+      [0.2, 2.8, 1.0],
+      [1.6, 5.1, 1.2],
+      [2.9, 3.6, 1.0],
+    ] as const;
+    for (const [x, h, w] of towers) {
+      box(parent, w, h, 0.9, C.navyDark, x, h / 2, z);
+      for (let wy = 0.5; wy < h - 0.3; wy += 0.45) {
+        for (let wx = -w / 2 + 0.2; wx < w / 2 - 0.1; wx += 0.32) {
+          box(parent, 0.12, 0.14, 0.08, C.window, x + wx, wy, z + 0.48);
+        }
+      }
+    }
   }
 
-  private buildTank(): THREE.Mesh {
+  private buildJumbo(research: boolean): THREE.Mesh {
     const g = new THREE.Group();
     this.scene.add(g);
-    const { w, h } = this.tankSize;
-    const z = this.tankOrigin.z;
-    const y = this.tankOrigin.y;
-    box(g, w + 0.28, 0.16, 0.42, C.gold, 0, y + h / 2 + 0.08, z);
-    box(g, w + 0.28, 0.16, 0.42, C.gold, 0, y - h / 2 - 0.08, z);
-    box(g, 0.16, h + 0.16, 0.42, C.gold, -w / 2 - 0.08, y, z);
-    box(g, 0.16, h + 0.16, 0.42, C.gold, w / 2 + 0.08, y, z);
-    box(g, w, h, 0.28, C.water, 0, y, z - 0.06);
-    box(g, w * 0.9, 0.14, 0.2, C.woodMid, 0, y - h / 2 + 0.12, z + 0.04);
+    const { w, h } = this.jumboSize;
+    const z = this.jumboOrigin.z;
+    const y = this.jumboOrigin.y;
+    const frame = research ? C.gold : C.navy;
+    box(g, w + 0.28, 0.16, 0.36, frame, 0, y + h / 2 + 0.08, z);
+    box(g, w + 0.28, 0.16, 0.36, frame, 0, y - h / 2 - 0.08, z);
+    box(g, 0.16, h + 0.16, 0.36, frame, -w / 2 - 0.08, y, z);
+    box(g, 0.16, h + 0.16, 0.36, frame, w / 2 + 0.08, y, z);
+    box(g, w, 0.1, 0.2, C.gold, 0, y + h / 2 + 0.22, z + 0.04);
 
     const glassMats = [
-      mat(C.navy),
-      mat(C.navy),
-      mat(C.navy),
-      mat(C.navy),
-      new THREE.MeshLambertMaterial({ color: 0x1a4a52, flatShading: true }),
+      mat(C.navyDark),
+      mat(C.navyDark),
+      mat(C.navyDark),
+      mat(C.navyDark),
+      new THREE.MeshLambertMaterial({ color: 0x101828, flatShading: true }),
       mat(C.navyDark),
     ];
     const glass = new THREE.Mesh(UNIT, glassMats);
     glass.scale.set(w, h, 0.08);
-    glass.position.set(0, y, z + 0.16);
+    glass.position.set(0, y, z + 0.14);
     g.add(glass);
+
+    const count = this.duo ? 2 : 1;
+    const ids: SeatId[] = this.duo ? ["maya", "jules"] : ["maya"];
+    ids.forEach((id) => {
+      const p = this.tilePos(id, count);
+      const hit = new THREE.Mesh(
+        UNIT,
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false }),
+      );
+      hit.scale.set(count > 1 ? w * 0.46 : w * 0.92, h * 0.9, 0.18);
+      hit.position.set(p.x, p.y, p.z);
+      hit.userData.seat = id;
+      g.add(hit);
+    });
     return glass;
   }
 
-  private buildAccountant(): void {
-    const g = new THREE.Group();
-    g.position.set(-2.55, 0, -2.4);
-    this.scene.add(g);
-    box(g, 0.7, 0.08, 0.7, C.ink, 0, 0.04, 0);
-    box(g, 0.55, 0.7, 0.4, C.navy, 0, 0.55, 0);
-    box(g, 0.48, 0.48, 0.48, C.skin, 0, 1.12, 0);
-    box(g, 0.52, 0.1, 0.18, C.ink, 0, 1.12, 0.2);
-    box(g, 0.45, 0.35, 0.45, C.foam, 0.55, 0.38, 0.15);
-  }
-
-  private buildSeat(id: SeatId, pos: THREE.Vector3, scale: number): SeatRig {
+  private buildSeat(id: SeatId, pos: THREE.Vector3, scale: number, tile: THREE.Vector3): SeatRig {
     const hoodie = id === "maya" ? C.maya : C.jules;
     const hoodieDark = id === "maya" ? C.mayaDark : C.julesDark;
     const root = new THREE.Group();
@@ -394,55 +411,56 @@ export class VoxelOffice {
     root.userData.seat = id;
     this.scene.add(root);
 
-    const deskPad = box(root, 1.35, 0.06, 1.15, C.gold, 0, 0.04, -0.15, id);
+    const deskPad = box(root, 1.35, 0.06, 1.15, C.gold, 0, 0.04, -0.12, id);
     deskPad.visible = false;
 
-    box(root, 1.25, 0.14, 0.85, C.wood, 0, 0.78, -0.22, id);
-    box(root, 0.12, 0.72, 0.12, C.woodDark, -0.48, 0.38, -0.48, id);
-    box(root, 0.12, 0.72, 0.12, C.woodDark, 0.48, 0.38, -0.48, id);
-    box(root, 0.12, 0.72, 0.12, C.woodDark, -0.48, 0.38, 0.05, id);
-    box(root, 0.12, 0.72, 0.12, C.woodDark, 0.48, 0.38, 0.05, id);
-    box(root, 0.42, 0.38, 0.12, C.navy, 0.28, 1.08, -0.48, id);
-    box(root, 0.34, 0.24, 0.06, C.water, 0.28, 1.08, -0.41, id);
-    box(root, 0.16, 0.18, 0.16, C.foam, -0.38, 0.95, -0.05, id);
-    box(root, 0.06, 0.12, 0.06, C.foam, -0.48, 0.95, -0.05, id);
-    box(root, 0.1, 0.05, 0.1, C.gold, -0.38, 1.07, -0.05, id);
+    box(root, 1.28, 0.12, 0.82, C.white, 0, 0.78, -0.28, id);
+    box(root, 0.1, 0.7, 0.1, C.navy, -0.5, 0.38, -0.52, id);
+    box(root, 0.1, 0.7, 0.1, C.navy, 0.5, 0.38, -0.52, id);
+    box(root, 0.1, 0.7, 0.1, C.navy, -0.5, 0.38, 0.02, id);
+    box(root, 0.1, 0.7, 0.1, C.navy, 0.5, 0.38, 0.02, id);
+    box(root, 0.48, 0.42, 0.1, C.navyDark, 0.22, 1.12, -0.52, id);
+    box(root, 0.4, 0.28, 0.06, C.glassDeep, 0.22, 1.12, -0.44, id);
+
+    box(root, 0.7, 0.12, 0.55, C.navy, 0, 0.42, 0.32, id);
+    box(root, 0.16, 0.55, 0.16, C.navyDark, -0.22, 0.28, 0.42, id);
+    box(root, 0.16, 0.55, 0.16, C.navyDark, 0.22, 0.28, 0.42, id);
+    box(root, 0.62, 0.5, 0.12, C.navy, 0, 0.82, 0.52, id);
 
     const pose = new THREE.Group();
-    pose.position.set(0, 0, 0.28);
+    pose.position.set(0, 0, 0.3);
     pose.userData.seat = id;
     root.add(pose);
 
-    box(pose, 0.85, 0.08, 0.55, C.ink, 0, 0.05, 0.02, id);
-    box(pose, 0.18, 0.42, 0.18, hoodieDark, -0.16, 0.32, 0.04, id);
-    box(pose, 0.18, 0.42, 0.18, hoodieDark, 0.16, 0.32, 0.04, id);
-    box(pose, 0.7, 0.72, 0.42, hoodie, 0, 0.88, 0, id);
-    box(pose, 0.18, 0.55, 0.18, hoodie, -0.48, 0.82, 0.02, id);
-    box(pose, 0.18, 0.55, 0.18, hoodie, 0.48, 0.78, -0.02, id);
-    box(pose, 0.62, 0.62, 0.62, C.skin, 0, 1.52, 0.02, id);
+    box(pose, 0.18, 0.4, 0.18, hoodieDark, -0.16, 0.55, 0.04, id);
+    box(pose, 0.18, 0.4, 0.18, hoodieDark, 0.16, 0.55, 0.04, id);
+    box(pose, 0.7, 0.72, 0.42, hoodie, 0, 1.05, 0, id);
+    box(pose, 0.18, 0.55, 0.18, hoodie, -0.48, 0.98, 0.02, id);
+    box(pose, 0.18, 0.55, 0.18, hoodie, 0.48, 0.94, -0.02, id);
+    box(pose, 0.62, 0.62, 0.62, C.skin, 0, 1.68, 0.02, id);
     if (id === "maya") {
-      box(pose, 0.68, 0.22, 0.68, C.hair, 0, 1.86, 0, id);
-      box(pose, 0.22, 0.22, 0.22, C.hair, -0.32, 1.78, 0.18, id);
-      box(pose, 0.22, 0.22, 0.22, C.hair, 0.32, 1.78, 0.18, id);
-      box(pose, 0.16, 0.16, 0.16, C.gold, 0.4, 1.55, 0.18, id);
-      box(pose, 0.08, 0.08, 0.08, C.red, 0.4, 1.55, 0.28, id);
+      box(pose, 0.68, 0.22, 0.68, C.hair, 0, 2.02, 0, id);
+      box(pose, 0.22, 0.22, 0.22, C.hair, -0.32, 1.94, 0.18, id);
+      box(pose, 0.22, 0.22, 0.22, C.hair, 0.32, 1.94, 0.18, id);
+      box(pose, 0.16, 0.16, 0.16, C.gold, 0.4, 1.7, 0.18, id);
+      box(pose, 0.08, 0.08, 0.08, C.red, 0.4, 1.7, 0.28, id);
     } else {
-      box(pose, 0.66, 0.18, 0.66, C.hair, 0, 1.84, 0, id);
-      box(pose, 0.7, 0.1, 0.18, C.ink, 0, 1.52, 0.28, id);
+      box(pose, 0.66, 0.18, 0.66, C.hair, 0, 2.0, 0, id);
+      box(pose, 0.7, 0.1, 0.18, C.ink, 0, 1.68, 0.28, id);
     }
-    box(pose, 0.1, 0.1, 0.06, C.ink, -0.14, 1.54, 0.32, id);
-    box(pose, 0.1, 0.1, 0.06, C.ink, 0.14, 1.54, 0.32, id);
+    box(pose, 0.1, 0.1, 0.06, C.ink, -0.14, 1.7, 0.32, id);
+    box(pose, 0.1, 0.1, 0.06, C.ink, 0.14, 1.7, 0.32, id);
 
-    box(pose, 0.14, 0.14, 0.28, C.gold, 0.55, 1.05, -0.22, id);
-    box(pose, 0.12, 0.85, 0.12, C.gold, 0.55, 1.52, -0.42, id);
-    box(pose, 0.12, 0.12, 0.7, C.gold, 0.55, 1.92, -0.82, id);
-    box(pose, 0.16, 0.16, 0.16, C.red, 0.55, 1.92, -1.18, id);
+    box(pose, 0.14, 0.14, 0.28, C.gold, 0.55, 1.2, -0.22, id);
+    box(pose, 0.12, 0.85, 0.12, C.gold, 0.55, 1.68, -0.42, id);
+    box(pose, 0.12, 0.12, 0.7, C.gold, 0.55, 2.08, -0.82, id);
+    box(pose, 0.16, 0.16, 0.16, C.red, 0.55, 2.08, -1.18, id);
 
     const tip = new THREE.Object3D();
-    tip.position.set(0.55, 1.92, -1.22);
+    tip.position.set(0.55, 2.08, -1.22);
     pose.add(tip);
 
-    const bobber = box(this.scene, 0.22, 0.22, 0.22, id === "maya" ? C.red : C.jules, 0, 2.4, -4.2);
+    const bobber = box(this.scene, 0.2, 0.2, 0.2, id === "maya" ? C.red : C.jules, tile.x, tile.y, tile.z);
     bobber.castShadow = false;
     const beads: THREE.Mesh[] = [];
     const lineColor = id === "maya" ? C.mayaDark : C.julesDark;
@@ -450,54 +468,38 @@ export class VoxelOffice {
       beads.push(box(this.scene, 0.1, 0.1, 0.1, lineColor, 0, 2, -2));
     }
 
-    return { id, root, pose, tip, bobber, beads, lineColor, deskPad };
+    return { id, root, pose, tip, bobber, beads, lineColor, deskPad, yankT: 0, tile };
   }
 
-  private updateLine(
-    rig: SeatRig,
-    seat: SeatSync,
-    hook: { x: number; y: number } | null,
-    index: number,
-    tape: HTMLCanvasElement | null,
-  ): void {
+  private updateLine(rig: SeatRig, seat: SeatSync): void {
     rig.tip.getWorldPosition(this.tmpA);
     const hooked = !seat.yanked;
     if (hooked) {
-      const tw = tape && tape.clientWidth > 2 ? tape.clientWidth : tape?.width || 256;
-      const th = tape && tape.clientHeight > 2 ? tape.clientHeight : tape?.height || 128;
-      const u = hook ? hook.x / tw : 0.62 + index * 0.12;
-      const v = hook ? hook.y / th : 0.55;
-      this.tmpB.set(
-        this.tankOrigin.x + (u - 0.5) * this.tankSize.w * 0.82,
-        this.tankOrigin.y + (0.5 - v) * this.tankSize.h * 0.72,
-        this.tankOrigin.z + 0.28,
-      );
+      this.tmpB.copy(rig.tile);
     } else {
       this.tmpB.copy(this.tmpA);
-      this.tmpB.x += 0.35;
-      this.tmpB.y -= 0.15;
-      this.tmpB.z += 0.55;
+      this.tmpB.y += 0.2;
+      this.tmpB.z += 0.7;
     }
     rig.bobber.position.copy(this.tmpB);
-    rig.bobber.visible = true;
-    rig.bobber.scale.setScalar(hooked ? 1 : 1.25);
-
-    const sag = hooked ? (seat.slack ? 1.45 : 0.28) : 0.05;
+    rig.bobber.visible = hooked;
+    const sag = hooked ? (seat.slack ? 1.35 : 0.22) : 0.04;
     this.tmpM.lerpVectors(this.tmpA, this.tmpB, 0.5);
     this.tmpM.y -= sag;
-    const selected = seat.selected;
-    const color = selected ? C.gold : rig.lineColor;
+    const color = seat.selected ? C.gold : rig.lineColor;
     for (let i = 0; i < BEADS; i++) {
       const t = i / (BEADS - 1);
       const mt = 1 - t;
-      const x = mt * mt * this.tmpA.x + 2 * mt * t * this.tmpM.x + t * t * this.tmpB.x;
-      const y = mt * mt * this.tmpA.y + 2 * mt * t * this.tmpM.y + t * t * this.tmpB.y;
-      const z = mt * mt * this.tmpA.z + 2 * mt * t * this.tmpM.z + t * t * this.tmpB.z;
       const bead = rig.beads[i]!;
-      bead.position.set(x, y, z);
+      bead.position.set(
+        mt * mt * this.tmpA.x + 2 * mt * t * this.tmpM.x + t * t * this.tmpB.x,
+        mt * mt * this.tmpA.y + 2 * mt * t * this.tmpM.y + t * t * this.tmpB.y,
+        mt * mt * this.tmpA.z + 2 * mt * t * this.tmpM.z + t * t * this.tmpB.z,
+      );
       bead.material = mat(color);
-      const fat = selected ? 0.13 : 0.09;
-      bead.scale.set(seat.slack && hooked ? fat : fat * 1.15, fat, fat);
+      bead.visible = hooked || i > BEADS * 0.55;
+      const fat = seat.selected ? 0.12 : 0.09;
+      bead.scale.setScalar(seat.slack && hooked ? fat * 0.85 : fat);
     }
   }
 }

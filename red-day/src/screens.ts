@@ -1,4 +1,4 @@
-import { accountantSvg, julesSvg, lockSvg, mayaSvg } from "./art";
+import { julesSvg, lockSvg, mayaSvg } from "./art";
 import { DISCLAIMER } from "./copy";
 import type { Roast } from "./copy";
 import { officeMarkup } from "./office";
@@ -15,7 +15,7 @@ export function bootScreen(existing: DeskSave | null): string {
         <span class="day">DAY</span>
       </div>
       <p class="tag">You don’t trade. You babysit.</p>
-      <p class="subtag">Tiny voxel office. Trainees on fishing lines. Risk is the joke and the lesson.</p>
+      <p class="subtag">High-rise voxel floor. You don’t trade. You babysit the jumbotron.</p>
       <label class="field">
         <span>Desk name</span>
         <input id="desk-name" maxlength="28" value="${escapeHtml(named)}" autocomplete="off" />
@@ -34,6 +34,8 @@ export function bootScreen(existing: DeskSave | null): string {
 
 export function briefScreen(save: DeskSave, day: PreparedDay): string {
   const two = day.seat2;
+  const maya = day.seats[0]!;
+  const jules = day.seats[1];
   return `
     <section class="screen brief">
       <header class="topbar">
@@ -42,48 +44,54 @@ export function briefScreen(save: DeskSave, day: PreparedDay): string {
       </header>
       <p class="kicker">MORNING BRIEF</p>
       <article class="headline-card">
-        <div class="badge">${escapeHtml(day.ticker)}</div>
-        <h2>${escapeHtml(day.headline)}</h2>
+        <div class="badge">${escapeHtml(maya.ticker)} · LONG</div>
+        <h2>${escapeHtml(maya.headline)}</h2>
       </article>
       <div class="maya-row">
         <div class="portrait">${mayaSvg("hyped")}</div>
         <div class="bubble">
-          <p class="who">MAYA · SEAT 1 · ON THE LINE</p>
-          <p>${escapeHtml(day.mayaTake)}</p>
+          <p class="who">MAYA · SEAT 1 · LONG ${escapeHtml(maya.ticker)}</p>
+          <p>${escapeHtml(maya.take)}</p>
         </div>
       </div>
       ${
-        two
-          ? `<div class="maya-row">
+        two && jules
+          ? `<article class="headline-card">
+              <div class="badge short">${escapeHtml(jules.ticker)} · SHORT</div>
+              <h2>${escapeHtml(jules.headline)}</h2>
+            </article>
+            <div class="maya-row">
               <div class="portrait">${julesSvg("smug")}</div>
               <div class="bubble">
-                <p class="who">JULES · SEAT 2 · ALSO ON THE LINE</p>
-                <p>${escapeHtml(day.julesTake)}</p>
+                <p class="who">JULES · SEAT 2 · SHORT ${escapeHtml(jules.ticker)}</p>
+                <p>${escapeHtml(jules.take)}</p>
               </div>
             </div>`
           : ""
       }
-      <p class="beats">Today’s tape: ${day.beats.map((b) => b.replace("-", " ")).join(" + ")}</p>
+      <p class="beats">Sheets are premade. You don’t pick the ticker or the side.</p>
       <button class="btn primary" data-act="floor">OPEN THE FLOOR</button>
-      <p class="fine">${two ? "Tap a desk to pick a line. Yank one, the other keeps swimming." : "~28 seconds. Slack the line or reel them off."}</p>
+      <p class="fine">${two ? "Tap a desk or jumbotron tile. Yank one, the other stays glued." : "~28 seconds. Yank rips them off the chair."}</p>
     </section>
   `;
 }
 
 export function floorScreen(save: DeskSave, day: PreparedDay): string {
+  const floorTickers = [...new Set(day.seats.map((s) => s.ticker))].join(" · ");
   return `
     <section class="screen floor">
       ${officeMarkup({
         seats: day.seats.map((s) => ({ id: s.id, name: s.name })),
-        accountant: save.accountantHired,
-        ticker: day.ticker,
+        ticker: floorTickers,
+        compliance: save.upgradeCompliance || save.accountantHired,
       })}
       <div class="floor-dock">
-        <div class="pos" id="pos">MAYA SWIMMING · ${money(day.seats[0] ? save.cash * day.seats[0].size : 0)} · ${escapeHtml(day.ticker)}</div>
+        <div class="pos" id="pos">MAYA LONG · ${money(day.seats[0] ? save.cash * day.seats[0].size : 0)} · ${escapeHtml(day.seats[0]?.ticker ?? day.ticker)}</div>
         <div class="actions">
           <button class="btn gold" data-act="ride" id="btn-ride">LET THEM RIDE</button>
           <button class="btn danger" data-act="yank" id="btn-yank">YANK</button>
         </div>
+        <button class="btn panic" data-act="panic" id="btn-panic">PANIC · YANK ALL</button>
       </div>
     </section>
   `;
@@ -109,7 +117,7 @@ export function bellScreen(opts: {
       <article class="roast-card ${tone}">
         <div class="roast-meta">
           <span>${escapeHtml(opts.save.deskName)}</span>
-          <span>DAY ${opts.day.day} · ${escapeHtml(opts.day.ticker)}</span>
+        <span>DAY ${opts.day.day} · FLOOR</span>
         </div>
         <p class="roast-pnl">${signedMoney(opts.pnl)}</p>
         <h2 class="stamp">${escapeHtml(opts.roast.stamp)}</h2>
@@ -126,9 +134,11 @@ export function bellScreen(opts: {
 }
 
 export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked: boolean): string {
-  const accLocked = !save.hasAccountant;
-  const accHired = save.accountantHired;
+  const shop = save.hasUpgrades;
   const seat2 = save.hasSeat2;
+  const c = save.upgradeCompliance || save.accountantHired;
+  const e = save.upgradeEspresso;
+  const r = save.upgradeResearch;
   return `
     <section class="screen desk">
       <header class="topbar">
@@ -145,8 +155,8 @@ export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked:
           ${mayaSvg("smug")}
           <div>
             <h3>Maya</h3>
-            <p>Overconfident trainee. FOMO voice. One fishing line until you reel her off.</p>
-            <span class="chip hot">SEAT 1</span>
+            <p>Always long. Oversized. FOMO. Her sheet is already filled in.</p>
+            <span class="chip hot">SEAT 1 · LONG</span>
           </div>
         </article>
         <article class="hire-card ${seat2 ? "" : "locked"}">
@@ -155,31 +165,63 @@ export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked:
             <h3>Jules</h3>
             ${
               seat2
-                ? `<p>Second seat. Has a “model.” Chases green. Yank Maya or Jules — the other keeps swimming.</p>
-                   <span class="chip hot">SEAT 2 · ON THE FLOOR</span>`
+                ? `<p>Shorts strength. Fades green. Has a “model.” Different book than Maya.</p>
+                   <span class="chip teal">SEAT 2 · SHORT</span>`
                 : `<p>Unlocks after the first real red day. Cap: two seats.</p>
                    <span class="chip">LOCKED</span>`
             }
           </div>
         </article>
-        <article class="hire-card ${accLocked ? "locked" : ""}">
-          ${accHired ? accountantSvg() : accLocked ? lockSvg() : accountantSvg()}
+        <article class="hire-card ${shop ? "" : "locked"}">
+          <div class="upgrade-swatch posters"></div>
           <div>
-            <h3>Accountant</h3>
+            <h3>Compliance posters</h3>
             ${
-              accHired
-                ? `<p>Size cap on. Overnight drip on. Fewer blowups. No fishing line. On purpose.</p>
-                   <span class="chip">HIRED</span>`
-                : accLocked
-                  ? `<p>Unlocks after the first real red day. Boring on purpose.</p>
-                     <span class="chip">LOCKED</span>`
-                  : `<p>Caps size, drips paper cash overnight, mutes blowups.</p>
-                     <button class="btn gold sm" data-act="hire">HIRE · FREE UNLOCK</button>`
+              !shop
+                ? `<p>Unlocks after the first real red day. Caps size for EVERYONE.</p>
+                   <span class="chip">LOCKED</span>`
+                : c
+                  ? `<p>Size cap on. Overnight drip on. Whole floor. The Accountant folded into the walls.</p>
+                     <span class="chip">PLACED</span>`
+                  : `<p>Cap size / risk for the whole floor. One item, everyone.</p>
+                     <button class="btn gold sm" data-act="upgrade" data-upgrade="compliance">PLACE · FREE</button>`
+            }
+          </div>
+        </article>
+        <article class="hire-card ${shop ? "" : "locked"}">
+          <div class="upgrade-swatch espresso"></div>
+          <div>
+            <h3>Espresso machine</h3>
+            ${
+              !shop
+                ? `<p>Unlocks after the first real red day. They act faster and dumber.</p>
+                   <span class="chip">LOCKED</span>`
+                : e
+                  ? `<p>More quotes. Earlier FOMO. Bigger adds. The whole floor is caffeinated.</p>
+                     <span class="chip">PLACED</span>`
+                  : `<p>They talk faster and add dumber. Whole floor.</p>
+                     <button class="btn gold sm" data-act="upgrade" data-upgrade="espresso">PLACE · FREE</button>`
+            }
+          </div>
+        </article>
+        <article class="hire-card ${shop ? "" : "locked"}">
+          <div class="upgrade-swatch research"></div>
+          <div>
+            <h3>Research glass</h3>
+            ${
+              !shop
+                ? `<p>Unlocks after the first real red day. Jumbotron gets a tell.</p>
+                   <span class="chip">LOCKED</span>`
+                : r
+                  ? `<p>Clearer P&amp;L. Warnings. A tell before a blowup. You still have to yank.</p>
+                     <span class="chip">PLACED</span>`
+                  : `<p>Jumbotron easier to read. Maybe a warning before it blows.</p>
+                     <button class="btn gold sm" data-act="upgrade" data-upgrade="research">PLACE · FREE</button>`
             }
           </div>
         </article>
       </div>
-      ${justUnlocked ? `<p class="unlock-banner">First Red Day logged. Jules took seat 2. HR sent an Accountant.</p>` : ""}
+      ${justUnlocked ? `<p class="unlock-banner">First Red Day logged. Jules took seat 2. Floor shop is open: three upgrades, each hits EVERYONE.</p>` : ""}
       <button class="btn primary" data-act="nextday">NEXT MORNING BRIEF</button>
       <button class="btn tiny" data-act="title">title screen</button>
     </section>

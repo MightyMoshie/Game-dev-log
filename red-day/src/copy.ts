@@ -16,49 +16,49 @@ export const BRIEFS: BriefCopy[] = [
     ticker: "CHAI",
     headline: "CHAI gaps on a leaked Notes screenshot titled “alpha (do not share).”",
     mayaTake: "If you’re not sized, you’re not serious. I’m serious. I’m so serious.",
-    julesTake: "I put the gap in a sheet. The sheet says maybe. I’m still long.",
+    julesTake: "I put the gap in a sheet. Sheet says fade. I’m short.",
   },
   {
     ticker: "NBL",
     headline: "NBL “community” insists yesterday’s dump was a liquidity event for believers.",
     mayaTake: "My group chat just sent fourteen rockets. That’s due diligence.",
-    julesTake: "Believers aren’t a factor. I’m a factor. I’m also, unfortunately, long.",
+    julesTake: "Believers aren’t a factor. I’m fading believers. Short.",
   },
   {
     ticker: "BLND",
     headline: "BLND listed on a meme venue that definitely exists. Volume: vibes.",
     mayaTake: "I watched three recap videos. I am an expert now. Load it.",
-    julesTake: "Volume: vibes is not a number. I’m going to treat it like a number anyway.",
+    julesTake: "Volume: vibes is not a number. I’m shorting the vibes.",
   },
   {
     ticker: "CHAI",
     headline: "Overnight: a guy named Braxton said CHAI is “so back it hurts.”",
     mayaTake: "Don’t fade this. I will personally be annoying if you fade this.",
-    julesTake: "Braxton is not in the model. The model is lonely. I’m in.",
+    julesTake: "Braxton is not in the model. The model is short. I’m short.",
   },
   {
     ticker: "NBL",
     headline: "Unverified “analyst” upgrades NBL from speculative to destiny.",
     mayaTake: "This is the one they write threads about. I can feel the thread.",
-    julesTake: "Destiny isn’t a rating. I’m tagging it as ‘speculative, annoying.’",
+    julesTake: "Destiny isn’t a rating. I’m fading destiny. Short.",
   },
   {
     ticker: "BLND",
     headline: "BLND opens after a 2am Space where nobody said a number, just “trust.”",
     mayaTake: "Stop looking with your eyes. Feel the tape. The tape owes me.",
-    julesTake: "Trust is not a cell I can format. Still. Line’s in.",
+    julesTake: "Trust is not a cell I can format. Fade the Space. Short.",
   },
   {
     ticker: "CHAI",
     headline: "CHAI holders posting “we risk-managed by not looking.”",
     mayaTake: "If it dips I’m adding. That’s called conviction, desk lead.",
-    julesTake: "Not looking is not a hedge. I looked. I hated it. I’m still here.",
+    julesTake: "Not looking is not a hedge. I looked. I’m short.",
   },
   {
     ticker: "NBL",
     headline: "Rumor mill: NBL “insiders” are three interns and a shared Spotify.",
     mayaTake: "Institutional. Basically. Spiritually. Anyway I’m long.",
-    julesTake: "Interns aren’t insiders. I would know. I am an intern. I’m long too.",
+    julesTake: "Interns aren’t insiders. I would know. I’m fading them. Short.",
   },
 ];
 
@@ -89,6 +89,7 @@ export function pickRoast(input: {
   fomo: boolean;
   recoveredPct: number;
   accountantHired: boolean;
+  panic?: boolean;
   legs?: RoastLeg[];
 }): Roast {
   const { pnl, cash, yanked, rode, fomo, recoveredPct, accountantHired } = input;
@@ -96,6 +97,15 @@ export function pickRoast(input: {
   void input.candlesLeftAfterYankMove;
   const legs = input.legs ?? [];
   const pctOfDesk = pnl / Math.max(cash, 1);
+
+  if (input.panic) {
+    return {
+      id: "panic_button",
+      stamp: "HIT THE BIG RED",
+      body: "You dumped the whole floor into the aisle. Jumbotron blinked. Paper hands, meet actual hands. The tax is the point. Per-desk yank is the job. This was a fire alarm.",
+      lesson: "Panic is a decision with a surcharge. Yank one book at a time.",
+    };
+  }
 
   if (legs.length === 2) {
     const two = twoSeatRoast(legs, cash, pnl, accountantHired);

@@ -165,6 +165,65 @@ describe("sim", () => {
     });
     assert.equal(roast.id, "wrong_line");
   });
+
+  it("Maya is always long; Jules is always short on her own sheet", () => {
+    const two = buildDay({ runSeed: 8, day: 2, cash: 10_000, accountantHired: false, seat2: true });
+    assert.equal(two.seats[0]?.side, "long");
+    assert.equal(two.seats[1]?.side, "short");
+    assert.equal(two.seats[0]?.id, "maya");
+    assert.equal(two.seats[1]?.id, "jules");
+    const books = newBooks(two, 10_000);
+    assert.equal(books[0]?.side, "long");
+    assert.equal(books[1]?.side, "short");
+    assert.ok(books[0]?.ticker);
+    assert.ok(books[1]?.ticker);
+  });
+
+  it("short books profit when price falls", () => {
+    const two = buildDay({ runSeed: 11, day: 2, cash: 10_000, accountantHired: false, seat2: true });
+    const jules = newBooks(two, 10_000)[1]!;
+    assert.equal(jules.side, "short");
+    const last = jules.candles.length - 1;
+    jules.candles[last] = { ...jules.candles[last]!, c: jules.entry * 0.8, l: jules.entry * 0.78 };
+    const pnl = unrealized(two, jules, last);
+    assert.ok(pnl > 0);
+  });
+
+  it("panic yank-all taxes the desk and stamps the roast", () => {
+    const day = buildDay({ runSeed: 4, day: 1, cash: 10_000, accountantHired: false });
+    const book = newBook(day);
+    const calm = closeDay(day, [book]);
+    const pan = closeDay(day, [book], { panic: true });
+    assert.ok(pan.pnl < calm.pnl);
+    assert.equal(pan.roast.id, "panic_button");
+  });
+
+  it("espresso makes FOMO arrive earlier; compliance still caps", () => {
+    const raw = buildDay({ runSeed: 9, day: 2, cash: 10_000, accountantHired: false });
+    const caf = buildDay({
+      runSeed: 9,
+      day: 2,
+      cash: 10_000,
+      accountantHired: false,
+      upgrades: { compliance: false, espresso: true, research: false },
+    });
+    assert.ok(caf.fomoIndex < raw.fomoIndex);
+    const cap = buildDay({
+      runSeed: 9,
+      day: 2,
+      cash: 10_000,
+      accountantHired: false,
+      upgrades: { compliance: true, espresso: true, research: false },
+    });
+    assert.equal(cap.hasAccountant, true);
+    const book = newBook(cap);
+    cap.candles[cap.fomoIndex] = {
+      ...cap.candles[cap.fomoIndex]!,
+      c: cap.entry * 0.7,
+      l: cap.entry * 0.68,
+    };
+    assert.equal(maybeIdleFomo(cap, book, cap.fomoIndex), false);
+  });
 });
 
 describe("roast picker", () => {

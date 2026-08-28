@@ -5,14 +5,14 @@ export type Pose = "swim" | "lean" | "reeled";
 
 export function officeMarkup(opts: {
   seats: { id: SeatId; name: string }[];
-  accountant: boolean;
   ticker: string;
+  compliance: boolean;
 }): string {
   const duo = opts.seats.length > 1;
   return `
     <div class="world ${duo ? "duo" : "solo"}" id="office">
       <div class="voxel-host" id="voxel-host"></div>
-      <canvas id="tape" class="tank-source" width="256" height="128"></canvas>
+      <canvas id="jumbo" class="tank-source jumbo-source" width="640" height="320"></canvas>
       <header class="hud">
         <div class="hud-chip"><span class="clock-label">TAPE</span><span class="clock" id="clock">0:28</span></div>
         <div class="hud-chip fat"><span class="ticker" id="ticker">${opts.ticker}</span></div>
@@ -22,7 +22,7 @@ export function officeMarkup(opts: {
         <p class="who" id="bubble-who">MAYA</p>
         <p id="maya-line">Don’t you dare hover the yank. I can hear your finger.</p>
       </div>
-      ${opts.accountant ? `<p class="hr-chip overlay" id="hr-line"></p>` : ""}
+      ${opts.compliance ? `<p class="hr-chip overlay" id="hr-line"></p>` : ""}
     </div>
   `;
 }

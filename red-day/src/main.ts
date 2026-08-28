@@ -1,6 +1,6 @@
 import "./style.css";
 import * as audio from "./audio";
-import { drawChart } from "./chart";
+import { drawJumbo } from "./jumbo";
 import { BANKS, Talker, type SeatId } from "./quotes";
 import { poseFor } from "./office";
 import { VoxelOffice } from "./voxel";
@@ -13,12 +13,14 @@ import {
   setBubble,
 } from "./screens";
 import {
+  blowupTell,
   buildDay,
   closeDay,
   maybeIdleFomo,
   newBooks,
   tryRide,
   tryYank,
+  tryYankAll,
   unrealized,
   type LiveBook,
   type PreparedDay,
@@ -33,17 +35,11 @@ import {
   money,
   newDesk,
   signedMoney,
+  upgradesFrom,
   writeSave,
   type DeskSave,
+  type UpgradeId,
 } from "./state";
-
-const INK = "#140c08";
-const PAPER = "#f7edd4";
-const RED = "#e31c3d";
-const GREEN = "#1f8a4c";
-const GOLD = "#f0b429";
-const MAYA_PINK = "#ff3d7a";
-const JULES_TEAL = "#1f8a7a";
 
 class RedDay {
   private root: HTMLElement;
@@ -59,6 +55,7 @@ class RedDay {
   private lastTickCandle = -1;
   private lastHrAt = 0;
   private lastYankId: string | null = null;
+  private panicked = false;
   private talkers = new Map<string, Talker>();
   private voxel: VoxelOffice | null = null;
 
@@ -83,8 +80,12 @@ class RedDay {
     else if (act === "floor") this.openFloor();
     else if (act === "ride") this.ride();
     else if (act === "yank") this.yank();
+    else if (act === "panic") this.panic();
     else if (act === "desk") this.showDesk();
-    else if (act === "hire") this.hire();
+    else if (act === "upgrade") {
+      const id = btn.getAttribute("data-upgrade");
+      if (id === "compliance" || id === "espresso" || id === "research") this.placeUpgrade(id);
+    }
     else if (act === "nextday") this.nextDay();
     else if (act === "title") this.showBoot();
     else if (act === "select") {
@@ -142,8 +143,9 @@ class RedDay {
       runSeed: this.save.runSeed,
       day: this.save.day,
       cash: this.save.cash,
-      accountantHired: this.save.accountantHired,
+      accountantHired: this.save.upgradeCompliance || this.save.accountantHired,
       seat2: this.save.hasSeat2,
+      upgrades: upgradesFrom(this.save),
     });
     this.books = newBooks(this.day, this.save.cash);
     this.selected = "maya";
@@ -159,8 +161,9 @@ class RedDay {
     if (host) {
       this.voxel = new VoxelOffice(host, {
         seats: this.day.seats.map((s) => s.id),
-        accountant: this.save.accountantHired,
+        upgrades: upgradesFrom(this.save),
         onSelect: (id) => this.select(id),
+        onPanic: () => this.panic(),
       });
     }
     this.talkers = new Map([
@@ -173,6 +176,7 @@ class RedDay {
     this.lastHrAt = 0;
     this.lastTickCandle = -1;
     this.lastYankId = null;
+    this.panicked = false;
     this.syncButtons();
     this.loop();
   }
@@ -202,32 +206,30 @@ class RedDay {
 
   private paintFloor(index: number, elapsed: number): void {
     if (!this.day) return;
-    const canvas = this.root.querySelector<HTMLCanvasElement>("#tape");
-    const yanks = this.books
-      .filter((b) => b.yankedAt != null)
-      .map((b) => ({
-        at: b.yankedAt!,
-        label: b.seatId === "maya" ? "MAYA" : "JULES",
-        color: b.seatId === "maya" ? MAYA_PINK : JULES_TEAL,
-      }));
-    let hook: { x: number; y: number } | null = null;
+    const canvas = this.root.querySelector<HTMLCanvasElement>("#jumbo");
+    const research = Boolean(this.save?.upgradeResearch);
     if (canvas) {
-      hook = drawChart(canvas, this.day.candles, index + 1, {
-        entry: this.day.entry,
-        yankedAt: null,
-        yanks,
-        embedded: true,
-        ink: INK,
-        paper: PAPER,
-        red: RED,
-        green: GREEN,
-        gold: GOLD,
-      }).hook;
+      drawJumbo(
+        canvas,
+        this.books.map((book) => ({
+          id: book.seatId,
+          name: book.name,
+          ticker: book.ticker,
+          side: book.side,
+          pnl: unrealized(this.day!, book, index),
+          notional: book.notional,
+          candles: book.candles,
+          index,
+          selected: book.seatId === this.selected,
+          yanked: book.yankedAt != null,
+          warn: research ? blowupTell(book, index) : null,
+        })),
+        { research },
+      );
     }
 
     this.voxel?.sync({
-      tape: canvas,
-      hook,
+      jumbo: canvas,
       seats: this.books.map((book) => ({
         id: book.seatId,
         pose: poseFor(book),
@@ -253,8 +255,9 @@ class RedDay {
     const sel = this.book(this.selected);
     const pos = this.root.querySelector("#pos");
     if (pos && sel) {
-      const state = sel.yankedAt != null ? "FLAT" : sel.rode || sel.fomo ? "SLACK" : "SWIMMING";
-      pos.textContent = `${sel.name.toUpperCase()} ${state} · ${money(sel.notional)} · ${this.day.ticker}`;
+      const side = sel.side === "short" ? "SHORT" : "LONG";
+      const state = sel.yankedAt != null ? "FLAT" : sel.rode || sel.fomo ? "GLUED" : "IN CHAIR";
+      pos.textContent = `${sel.name.toUpperCase()} ${side} ${state} · ${money(sel.notional)} · ${sel.ticker}`;
     }
 
     if (index !== this.lastTickCandle) {
@@ -263,11 +266,12 @@ class RedDay {
     }
 
     const now = performance.now();
-    if (now - this.lastLineAt > 2600) {
+    const quoteMs = this.save?.upgradeEspresso ? 1400 : 2600;
+    if (now - this.lastLineAt > quoteMs) {
       this.lastLineAt = now;
       this.speakSelected("idle");
     }
-    if (this.save?.accountantHired && now - this.lastHrAt > 8200) {
+    if ((this.save?.upgradeCompliance || this.save?.accountantHired) && now - this.lastHrAt > 8200) {
       this.lastHrAt = now;
       const hr = this.root.querySelector("#hr-line");
       if (hr) hr.textContent = this.talkers.get("accountant")?.next() ?? "";
@@ -297,7 +301,7 @@ class RedDay {
     if (!book) return;
     if (!tryRide(this.day, book)) return;
     audio.ride();
-    this.flashPos(this.day.hasAccountant ? "HOLD" : `${book.name.toUpperCase()} SLACK`);
+    this.flashPos(this.day.hasAccountant ? "HOLD" : `${book.name.toUpperCase()} GLUED`);
     this.speak(book.seatId, "ride");
     this.syncButtons();
   }
@@ -312,7 +316,7 @@ class RedDay {
     audio.yank();
     this.lastYankId = book.seatId;
     this.voxel?.splash();
-    this.flashPos(`${book.name.toUpperCase()} REELED`);
+    this.flashPos(`${book.name.toUpperCase()} OFF CHAIR`);
     this.speak(book.seatId, "yank");
     const other = this.books.find((b) => b.seatId !== book.seatId && b.yankedAt == null);
     if (other) this.selected = other.seatId;
@@ -328,8 +332,26 @@ class RedDay {
     rideBtn.disabled = flat || book.rode;
     yankBtn.disabled = flat;
     const who = book.name.toUpperCase();
-    rideBtn.textContent = book.rode ? `${who} · SLACK` : `LET ${who} RIDE`;
-    yankBtn.textContent = flat ? `${who} · REELED` : `YANK ${who}`;
+    rideBtn.textContent = book.rode ? `${who} · GLUED` : `LET ${who} RIDE`;
+    yankBtn.textContent = flat ? `${who} · YANKED` : `YANK ${who}`;
+    const panicBtn = this.root.querySelector<HTMLButtonElement>("#btn-panic");
+    if (panicBtn) panicBtn.disabled = this.books.every((b) => b.yankedAt != null);
+  }
+
+  private panic(): void {
+    if (!this.day) return;
+    const elapsed = Math.min(FLOOR_MS, performance.now() - this.floorStart);
+    const index = Math.min(CANDLE_COUNT - 1, Math.floor((elapsed / FLOOR_MS) * CANDLE_COUNT));
+    const n = tryYankAll(this.day, this.books, index);
+    if (n === 0 && this.books.every((b) => b.yankedAt != null)) return;
+    this.panicked = true;
+    audio.yank();
+    this.lastYankId = this.books[0]?.seatId ?? null;
+    this.flashPos("PANIC · WHOLE FLOOR");
+    const still = this.books.find((b) => b.yankedAt == null);
+    if (still) this.selected = still.seatId;
+    this.syncButtons();
+    this.speak(this.selected, "yank");
   }
 
   private flashPos(label: string): void {
@@ -344,7 +366,7 @@ class RedDay {
     this.stopFloor();
     if (!this.save || !this.day) return;
     audio.bell();
-    const { pnl, roast } = closeDay(this.day, this.books);
+    const { pnl, roast } = closeDay(this.day, this.books, { panic: this.panicked });
     this.lastPnl = pnl;
     this.save.cash = Math.round(this.save.cash + pnl);
     this.save.bestDay = Math.max(this.save.bestDay, pnl);
@@ -354,6 +376,7 @@ class RedDay {
       if (!this.save.hasAccountant || !this.save.hasSeat2) {
         this.save.hasAccountant = true;
         this.save.hasSeat2 = true;
+        this.save.hasUpgrades = true;
         this.justUnlocked = true;
       }
     }
@@ -376,9 +399,13 @@ class RedDay {
     this.root.innerHTML = deskScreen(this.save, this.lastPnl, this.justUnlocked);
   }
 
-  private hire(): void {
-    if (!this.save || !this.save.hasAccountant) return;
-    this.save.accountantHired = true;
+  private placeUpgrade(id: UpgradeId): void {
+    if (!this.save || !this.save.hasUpgrades) return;
+    if (id === "compliance") {
+      this.save.upgradeCompliance = true;
+      this.save.accountantHired = true;
+    } else if (id === "espresso") this.save.upgradeEspresso = true;
+    else this.save.upgradeResearch = true;
     writeSave(this.save);
     this.justUnlocked = false;
     this.showDesk();
@@ -386,7 +413,7 @@ class RedDay {
 
   private nextDay(): void {
     if (!this.save) return;
-    if (this.save.accountantHired) {
+    if (this.save.upgradeCompliance || this.save.accountantHired) {
       this.save.cash = Math.round(this.save.cash + DRIP_FLAT + this.save.cash * DRIP_PCT);
     }
     writeSave(this.save);
