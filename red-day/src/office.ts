@@ -12,7 +12,7 @@ export function officeMarkup(opts: {
   return `
     <div class="world ${duo ? "duo" : "solo"}" id="office">
       <div class="voxel-host" id="voxel-host"></div>
-      <canvas id="jumbo" class="tank-source jumbo-source" width="640" height="320"></canvas>
+      <canvas id="jumbo" class="tank-source jumbo-source" width="960" height="480"></canvas>
       <header class="hud">
         <div class="hud-chip"><span class="clock-label">TAPE</span><span class="clock" id="clock">0:28</span></div>
         <div class="hud-chip fat"><span class="ticker" id="ticker">${opts.ticker}</span></div>

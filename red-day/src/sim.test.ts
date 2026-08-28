@@ -10,6 +10,8 @@ import {
   pickBeats,
   tryRide,
   tryYank,
+  tryYankAll,
+  blowupTell,
   unrealized,
 } from "./sim";
 import { mulberry32 } from "./rng";
@@ -223,6 +225,30 @@ describe("sim", () => {
       l: cap.entry * 0.68,
     };
     assert.equal(maybeIdleFomo(cap, book, cap.fomoIndex), false);
+  });
+
+  it("Maya and Jules pick different fictional tickers", () => {
+    for (const seed of [1, 2, 3, 8, 11, 42]) {
+      const two = buildDay({ runSeed: seed, day: 2, cash: 10_000, accountantHired: false, seat2: true });
+      assert.notEqual(two.seats[0]?.ticker, two.seats[1]?.ticker);
+    }
+  });
+
+  it("yank-all flats every open book", () => {
+    const day = buildDay({ runSeed: 8, day: 2, cash: 10_000, accountantHired: false, seat2: true });
+    const books = newBooks(day, 10_000);
+    assert.equal(tryYankAll(day, books, 12), 2);
+    assert.ok(books.every((b) => b.yankedAt === 12));
+    assert.equal(tryYankAll(day, books, 20), 0);
+  });
+
+  it("research tell flags a sour long tape", () => {
+    const day = buildDay({ runSeed: 5, day: 1, cash: 10_000, accountantHired: false });
+    const book = newBook(day);
+    const i = 10;
+    book.candles[i] = { ...book.candles[i]!, c: 20, o: 20, h: 20.2, l: 19.8 };
+    book.candles[i + 6] = { ...book.candles[i + 6]!, c: 18.8, o: 19, h: 19.1, l: 18.6 };
+    assert.equal(blowupTell(book, i), "TAPE SOURS");
   });
 });
 

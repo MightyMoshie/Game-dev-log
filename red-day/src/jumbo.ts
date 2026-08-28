@@ -24,8 +24,8 @@ export function drawJumbo(
 ): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  const w = canvas.width || 640;
-  const h = canvas.height || 320;
+  const w = canvas.width || 960;
+  const h = canvas.height || 480;
   if (canvas.width !== w) canvas.width = w;
   if (canvas.height !== h) canvas.height = h;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -62,42 +62,42 @@ function paintTile(
 
   const up = tile.pnl >= 0;
   ctx.fillStyle = "#8aa0c8";
-  ctx.font = "700 13px Nunito, sans-serif";
-  ctx.fillText(tile.name.toUpperCase(), x + 12, y + 22);
+  ctx.font = "800 18px Nunito, sans-serif";
+  ctx.fillText(tile.name.toUpperCase(), x + 16, y + 30);
 
-  ctx.fillStyle = tile.side === "long" ? "#1f8a4c" : "#e31c3d";
-  ctx.font = "900 12px Nunito, sans-serif";
-  ctx.fillText(tile.side === "long" ? "LONG" : "SHORT", x + 12, y + 40);
+  ctx.fillStyle = tile.side === "long" ? "#3dd68c" : "#ff4d6d";
+  ctx.font = "900 22px Nunito, sans-serif";
+  ctx.fillText(tile.side === "long" ? "LONG" : "SHORT", x + 16, y + 56);
 
   ctx.fillStyle = "#f0b429";
-  ctx.font = "800 28px Bangers, Impact, sans-serif";
-  ctx.fillText(tile.ticker, x + w - 12 - ctx.measureText(tile.ticker).width, y + 36);
+  ctx.font = "800 42px Bangers, Impact, sans-serif";
+  ctx.fillText(tile.ticker, x + w - 16 - ctx.measureText(tile.ticker).width, y + 50);
 
-  const pnlY = research ? y + 78 : y + 84;
+  const pnlY = research ? y + 108 : y + 118;
   ctx.fillStyle = tile.yanked ? "#8aa0c8" : up ? "#3dd68c" : "#ff4d6d";
-  ctx.font = research ? "800 36px 'JetBrains Mono', monospace" : "800 28px 'JetBrains Mono', monospace";
-  ctx.fillText(signedMoney(tile.pnl), x + 12, pnlY);
+  ctx.font = research ? "800 52px 'JetBrains Mono', monospace" : "800 40px 'JetBrains Mono', monospace";
+  ctx.fillText(signedMoney(tile.pnl), x + 16, pnlY);
 
   ctx.fillStyle = "#8aa0c8";
-  ctx.font = "700 11px 'JetBrains Mono', monospace";
-  ctx.fillText(tile.yanked ? "FLAT" : `BOOK ${Math.round(tile.notional).toLocaleString("en-US")}`, x + 12, pnlY + 18);
+  ctx.font = "800 16px 'JetBrains Mono', monospace";
+  ctx.fillText(tile.yanked ? "FLAT" : `BOOK ${Math.round(tile.notional).toLocaleString("en-US")}`, x + 16, pnlY + 24);
 
-  spark(ctx, tile, x + 10, y + h - 58, w - 20, 42);
+  spark(ctx, tile, x + 14, y + h - 78, w - 28, 58);
 
   if (tile.yanked) {
     ctx.fillStyle = "rgba(12,20,40,0.45)";
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = "#f0b429";
-    ctx.font = "800 22px Bangers, Impact, sans-serif";
-    ctx.fillText("YANKED", x + 12, y + h - 14);
+    ctx.font = "800 32px Bangers, Impact, sans-serif";
+    ctx.fillText("YANKED", x + 16, y + h - 18);
   }
 
   if (research && tile.warn) {
     ctx.fillStyle = "#e31c3d";
-    ctx.fillRect(x, y, w, 22);
+    ctx.fillRect(x, y, w, 28);
     ctx.fillStyle = "#fff6e8";
-    ctx.font = "900 12px Nunito, sans-serif";
-    ctx.fillText(tile.warn, x + 10, y + 16);
+    ctx.font = "900 16px Nunito, sans-serif";
+    ctx.fillText(tile.warn, x + 14, y + 20);
   }
   ctx.restore();
 }
@@ -127,6 +127,6 @@ function spark(
     else ctx.lineTo(px, py);
   });
   ctx.strokeStyle = tile.pnl >= 0 ? "#3dd68c" : "#ff4d6d";
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 3.5;
   ctx.stroke();
 }

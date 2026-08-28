@@ -58,6 +58,24 @@ function box(
   return mesh;
 }
 
+/** Unlit voxel — city windows and the jumbotron stay bright in the night pit. */
+function glow(
+  parent: THREE.Object3D,
+  w: number,
+  h: number,
+  d: number,
+  color: number,
+  x: number,
+  y: number,
+  z: number,
+): THREE.Mesh {
+  const mesh = new THREE.Mesh(UNIT, new THREE.MeshBasicMaterial({ color }));
+  mesh.scale.set(w, h, d);
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+
 export type SeatSync = {
   id: SeatId;
   pose: Pose;
@@ -93,8 +111,8 @@ export class VoxelOffice {
   private pointer = new THREE.Vector2();
   private jumboTex: THREE.CanvasTexture | null = null;
   private jumboGlass: THREE.Mesh;
-  private jumboOrigin = new THREE.Vector3(0, 2.82, -4.48);
-  private jumboSize = { w: 5.5, h: 2.2 };
+  private jumboOrigin = new THREE.Vector3(0, 2.55, -4.42);
+  private jumboSize = { w: 4.55, h: 1.95 };
   private seats = new Map<SeatId, SeatRig>();
   private ro: ResizeObserver;
   private onSelect: (id: SeatId) => void;
@@ -278,7 +296,7 @@ export class VoxelOffice {
       this.jumboTex.colorSpace = THREE.SRGBColorSpace;
       this.jumboTex.minFilter = THREE.LinearFilter;
       this.jumboTex.magFilter = THREE.LinearFilter;
-      const mats = this.jumboGlass.material as THREE.MeshLambertMaterial[];
+      const mats = this.jumboGlass.material as THREE.MeshBasicMaterial[];
       mats[4].map = this.jumboTex;
       mats[4].color.set(0xffffff);
       mats[4].needsUpdate = true;
@@ -299,10 +317,10 @@ export class VoxelOffice {
 
     this.skyline(root);
 
-    box(root, 1.8, 4.6, 0.36, C.navy, -2.85, 2.35, -4.78);
-    box(root, 1.8, 4.6, 0.36, C.navy, 2.85, 2.35, -4.78);
-    box(root, 7.4, 0.7, 0.36, C.navy, 0, 4.4, -4.78);
-    box(root, 7.4, 0.32, 0.42, C.gold, 0, 0.32, -4.78);
+    box(root, 0.95, 4.8, 0.36, C.navy, -3.35, 2.45, -4.78);
+    box(root, 0.95, 4.8, 0.36, C.navy, 3.35, 2.45, -4.78);
+    box(root, 7.6, 0.42, 0.36, C.navy, 0, 4.62, -4.78);
+    box(root, 7.6, 0.28, 0.42, C.gold, 0, 0.3, -4.78);
     box(root, 0.42, 4.6, 9.4, C.navyDark, -3.72, 2.35, 0);
     box(root, 0.48, 0.28, 9.4, C.ink, -3.72, 0.32, 0);
     box(root, 0.42, 4.6, 1.7, C.navy, 3.72, 2.35, -3.85);
@@ -320,10 +338,10 @@ export class VoxelOffice {
     box(root, 0.38, 0.38, 0.38, C.green2, 3.05, 1.18, -3.25);
     box(root, 0.48, 0.28, 0.48, C.white, 2.85, 0.42, -3.4);
 
-    const panic = box(root, 0.95, 0.85, 0.95, C.red, 2.55, 0.55, 3.35);
+    const panic = box(root, 1.15, 1.05, 1.15, C.red, 2.55, 0.66, 3.35);
     panic.userData.panic = true;
-    box(root, 1.05, 0.1, 1.05, C.gold, 2.55, 0.14, 3.35).userData.panic = true;
-    box(root, 0.28, 0.18, 0.28, C.white, 2.55, 1.08, 3.35).userData.panic = true;
+    box(root, 1.28, 0.12, 1.28, C.gold, 2.55, 0.14, 3.35).userData.panic = true;
+    glow(root, 0.32, 0.22, 0.32, C.white, 2.55, 1.28, 3.35).userData.panic = true;
 
     if (upgrades.compliance) {
       box(root, 0.08, 1.1, 0.7, C.white, -3.48, 2.4, 1.4);
@@ -342,19 +360,20 @@ export class VoxelOffice {
   }
 
   private skyline(parent: THREE.Object3D): void {
-    const z = -6.4;
+    const z = -5.7;
     const towers = [
-      [-2.6, 3.2, 1.1],
-      [-1.2, 4.6, 1.3],
-      [0.2, 2.8, 1.0],
-      [1.6, 5.1, 1.2],
-      [2.9, 3.6, 1.0],
+      [-3.5, 4.2, 1.05],
+      [-2.2, 6.1, 1.25],
+      [-0.7, 3.6, 1.0],
+      [0.8, 5.6, 1.2],
+      [2.2, 4.0, 1.05],
+      [3.55, 5.2, 1.0],
     ] as const;
     for (const [x, h, w] of towers) {
-      box(parent, w, h, 0.9, C.navyDark, x, h / 2, z);
-      for (let wy = 0.5; wy < h - 0.3; wy += 0.45) {
-        for (let wx = -w / 2 + 0.2; wx < w / 2 - 0.1; wx += 0.32) {
-          box(parent, 0.12, 0.14, 0.08, C.window, x + wx, wy, z + 0.48);
+      box(parent, w, h, 0.95, C.navyDark, x, h / 2, z);
+      for (let wy = 0.55; wy < h - 0.25; wy += 0.42) {
+        for (let wx = -w / 2 + 0.18; wx < w / 2 - 0.08; wx += 0.3) {
+          glow(parent, 0.13, 0.16, 0.08, C.window, x + wx, wy, z + 0.52);
         }
       }
     }
@@ -378,7 +397,7 @@ export class VoxelOffice {
       mat(C.navyDark),
       mat(C.navyDark),
       mat(C.navyDark),
-      new THREE.MeshLambertMaterial({ color: 0x101828, flatShading: true }),
+      new THREE.MeshBasicMaterial({ color: 0x101828 }),
       mat(C.navyDark),
     ];
     const glass = new THREE.Mesh(UNIT, glassMats);

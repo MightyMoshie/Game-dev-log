@@ -476,8 +476,8 @@ body {
 }
 
 .jumbo-source {
-  width: 640px;
-  height: 320px;
+  width: 960px;
+  height: 480px;
 }
 
 .hud {
@@ -578,28 +578,60 @@ body {
   background: var(--navy);
 }
 
-.upgrade-swatch {
-  width: 72px;
-  height: 72px;
+.kit-kicker {
+  font-size: 22px;
+  margin: 2px 0 0;
+}
+
+.kit-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  background: var(--foam);
   border: 4px solid var(--ink);
-  border-radius: 12px;
+  border-radius: 14px;
+  padding: 8px 10px;
   box-shadow: 4px 4px 0 var(--ink);
 }
 
-.upgrade-swatch.posters {
-  background:
-    linear-gradient(#e31c3d 0 18%, #f4f7fb 18% 100%);
+.kit-card h3 {
+  margin: 0;
+  font-family: Bangers, Impact, sans-serif;
+  font-size: 20px;
 }
 
-.upgrade-swatch.espresso {
-  background:
-    radial-gradient(circle at 50% 38%, var(--gold) 0 18%, transparent 19%),
-    var(--navy);
+.kit-card p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.upgrade-swatch.research {
-  background:
-    linear-gradient(135deg, #7ec8e8 0 40%, var(--gold) 40% 48%, var(--navy) 48%);
+.kit-card.locked {
+  background: #e4d7bc;
+}
+
+.screen.desk {
+  overflow-y: auto;
+  gap: 8px;
+}
+
+.roster.compact {
+  gap: 8px;
+}
+
+.roster.compact .hire-card {
+  grid-template-columns: 64px 1fr;
+  padding: 6px;
+}
+
+.roster.compact .hire-card h3 {
+  font-size: 22px;
+}
+
+.roster.compact .hire-card p {
+  margin: 0 0 4px;
+  font-size: 12px;
 }
 
 .pos.flash {

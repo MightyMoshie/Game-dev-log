@@ -139,6 +139,20 @@ export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked:
   const c = save.upgradeCompliance || save.accountantHired;
   const e = save.upgradeEspresso;
   const r = save.upgradeResearch;
+  const kit = (id: "compliance" | "espresso" | "research", title: string, blurb: string, placed: boolean) => `
+    <article class="kit-card ${shop ? "" : "locked"}">
+      <div>
+        <h3>${title}</h3>
+        <p>${!shop ? "Unlocks after the first real red day." : placed ? blurb : "One item, whole floor."}</p>
+      </div>
+      ${
+        !shop
+          ? `<span class="chip">LOCKED</span>`
+          : placed
+            ? `<span class="chip">PLACED</span>`
+            : `<button class="btn gold sm" data-act="upgrade" data-upgrade="${id}">PLACE</button>`
+      }
+    </article>`;
   return `
     <section class="screen desk">
       <header class="topbar">
@@ -150,12 +164,17 @@ export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked:
         <p class="cash">${money(save.cash)}</p>
         ${lastPnl == null ? "" : `<p class="last ${lastPnl < 0 ? "down" : "up"}">last print ${signedMoney(lastPnl)}</p>`}
       </div>
-      <div class="roster">
+      ${justUnlocked ? `<p class="unlock-banner">First Red Day. Jules took seat 2. Place 3 floor upgrades — each hits EVERYONE.</p>` : ""}
+      <p class="kicker kit-kicker">FLOOR KIT</p>
+      ${kit("compliance", "Compliance posters", "Size cap + drip. Risk muted for everyone.", c)}
+      ${kit("espresso", "Espresso machine", "Faster quotes. Earlier FOMO. Dumber adds.", e)}
+      ${kit("research", "Research glass", "Clearer jumbotron. A tell before a blowup.", r)}
+      <div class="roster compact">
         <article class="hire-card">
           ${mayaSvg("smug")}
           <div>
             <h3>Maya</h3>
-            <p>Always long. Oversized. FOMO. Her sheet is already filled in.</p>
+            <p>Always long. Oversized. FOMO.</p>
             <span class="chip hot">SEAT 1 · LONG</span>
           </div>
         </article>
@@ -165,63 +184,12 @@ export function deskScreen(save: DeskSave, lastPnl: number | null, justUnlocked:
             <h3>Jules</h3>
             ${
               seat2
-                ? `<p>Shorts strength. Fades green. Has a “model.” Different book than Maya.</p>
-                   <span class="chip teal">SEAT 2 · SHORT</span>`
-                : `<p>Unlocks after the first real red day. Cap: two seats.</p>
-                   <span class="chip">LOCKED</span>`
-            }
-          </div>
-        </article>
-        <article class="hire-card ${shop ? "" : "locked"}">
-          <div class="upgrade-swatch posters"></div>
-          <div>
-            <h3>Compliance posters</h3>
-            ${
-              !shop
-                ? `<p>Unlocks after the first real red day. Caps size for EVERYONE.</p>
-                   <span class="chip">LOCKED</span>`
-                : c
-                  ? `<p>Size cap on. Overnight drip on. Whole floor. The Accountant folded into the walls.</p>
-                     <span class="chip">PLACED</span>`
-                  : `<p>Cap size / risk for the whole floor. One item, everyone.</p>
-                     <button class="btn gold sm" data-act="upgrade" data-upgrade="compliance">PLACE · FREE</button>`
-            }
-          </div>
-        </article>
-        <article class="hire-card ${shop ? "" : "locked"}">
-          <div class="upgrade-swatch espresso"></div>
-          <div>
-            <h3>Espresso machine</h3>
-            ${
-              !shop
-                ? `<p>Unlocks after the first real red day. They act faster and dumber.</p>
-                   <span class="chip">LOCKED</span>`
-                : e
-                  ? `<p>More quotes. Earlier FOMO. Bigger adds. The whole floor is caffeinated.</p>
-                     <span class="chip">PLACED</span>`
-                  : `<p>They talk faster and add dumber. Whole floor.</p>
-                     <button class="btn gold sm" data-act="upgrade" data-upgrade="espresso">PLACE · FREE</button>`
-            }
-          </div>
-        </article>
-        <article class="hire-card ${shop ? "" : "locked"}">
-          <div class="upgrade-swatch research"></div>
-          <div>
-            <h3>Research glass</h3>
-            ${
-              !shop
-                ? `<p>Unlocks after the first real red day. Jumbotron gets a tell.</p>
-                   <span class="chip">LOCKED</span>`
-                : r
-                  ? `<p>Clearer P&amp;L. Warnings. A tell before a blowup. You still have to yank.</p>
-                     <span class="chip">PLACED</span>`
-                  : `<p>Jumbotron easier to read. Maybe a warning before it blows.</p>
-                     <button class="btn gold sm" data-act="upgrade" data-upgrade="research">PLACE · FREE</button>`
+                ? `<p>Shorts strength. Fades green.</p><span class="chip teal">SEAT 2 · SHORT</span>`
+                : `<p>Unlocks after the first red day.</p><span class="chip">LOCKED</span>`
             }
           </div>
         </article>
       </div>
-      ${justUnlocked ? `<p class="unlock-banner">First Red Day logged. Jules took seat 2. Floor shop is open: three upgrades, each hits EVERYONE.</p>` : ""}
       <button class="btn primary" data-act="nextday">NEXT MORNING BRIEF</button>
       <button class="btn tiny" data-act="title">title screen</button>
     </section>
