@@ -6,6 +6,8 @@ You are the desk lead of a tiny cartoon prop office. You do not trade. Trainees 
 
 Fictional tickers only (`CHAI`, `NBL`, `BLND`). Satire. Not financial advice.
 
+Phone playtest: https://mightymoshie.github.io/Game-dev-log/
+
 ## Run
 
 ```bash
