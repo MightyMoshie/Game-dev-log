@@ -2,7 +2,7 @@
 
 TikTok Mini Game smoke test. **Browser first. No TikTok SDK.** A later port targets Cocos / TikTok Mini Games.
 
-You are the desk lead of a tiny cartoon prop office. You do not trade. Trainees fish the tape on visible lines. You slack the line (**Let them ride**) or reel them off (**Yank**). Teaching is surviving their decisions.
+You are the desk lead. **You don’t trade. You approve who sits.** Trainees bring a premade book (ticker + side are theirs). You Seat / Reject / Cut size, then slack the line (**Let them ride**) or reel them off (**Yank**). Teaching is surviving their decisions.
 
 Fictional tickers only (`CHAI`, `NBL`, `BLND`). Satire. Not financial advice.
 
@@ -19,21 +19,39 @@ npm run dev
 Then open the local URL (Vite prints it). Use phone-width or the on-screen 9:16 frame.
 
 ```bash
-npm test          # sim, quotes, roast tests
+npm test          # sim, quotes, roast, unlock/scar/pitch tests
 npm run build     # production bundle in dist/
-npm run preview   # serve the build
+npm run preview   # serve the build (uses /Game-dev-log/ base)
 ```
 
-## Loop (under ~45s for day 1)
+Local `npm run dev` serves at `/`. Production / Pages uses `/Game-dev-log/`.
+
+## Loop
 
 1. **Cold start** — optional desk name (default Paper Hands LLC).
-2. **Morning brief** — one headline + trainee hot take(s).
-3. **The Floor** — a chunky isometric office that fills the phone. Tape lives in a fish tank on the back wall. Maya’s fishing rod is the silhouette. Let them ride / Yank.
-4. **Bell** — day’s P&L + roast card. Fake “Watch to replay the day” button (disabled).
-5. **Desk** — cash, roster. First real red day unlocks **Jules (seat 2)** and the Accountant. Next morning.
+2. **Pitch Gate** — 1–2 morning pitches (Day 1: Maya only). Each pitch: trainee, bias tag (`ALWAYS LONG` / `ALWAYS SHORT`), fictional ticker, trainee-owned side (you cannot flip it), size band (Full/Half), one-line thesis. Actions: **Seat / Reject / Cut size**. Day 1 forces at least one Seat.
+3. **Morning Mandate** (optional) — one desk rule: `NO FOMO` / `HALF SIZE` / `YANK GREEN`. Breaking feeds a roast, not a hard fail. `NO FOMO` is hard before Compliance — FOMO still fires without it.
+4. **The Floor** — voxel high-rise. Jumbotron on the back wall. Let {name} ride / Yank {name} / Panic. ~28s (20s with Espresso).
+5. **Bell** — day’s P&L + roast. Disabled “Coming · Watch to replay” placeholder.
+6. **Desk** — paper cash, **Scars**, floor kit, roster. Next open.
 
-After seat 2: two desks stacked, one line each. Tap a desk to select, then yank or slack that line. The other trainee keeps swimming.
+## Unlock + Scars
+
+Jules (seat 2) and the shop open on **whichever comes first**:
+
+- `save.day >= 3` after finishing Day 2 (entering Day 3), or
+- first real red day (`pnl < -25`)
+
+Existing saves that already have `hasSeat2` are left alone. If they don’t, and `day >= 3`, the grant fires on the next finish / desk visit.
+
+**Scars** (`DeskSave.scars`):
+
+- Shop open grants `scars = max(scars, 2)` so one upgrade is immediately buyable. **Starter Scars = 2.**
+- Earn: real red +2, recovered-after-yank +1 (cap 1/day), panic +1 (additive).
+- Floor kit (Compliance / Espresso / Research) costs **2 Scars** each. Each item hits everyone.
+
+After seat 2: two desks. Tap a desk to select, then yank or slack that line. The other trainee keeps swimming.
 
 ## Out of scope (v0)
 
-Real market data, multiplayer, IAP, TikTok login, ads, a six-desk spreadsheet, desktop-only layout.
+Player direction trading, real market data, art redo, Pages settings, multiplayer, IAP, TikTok login / SDK, ads, a third seat, desktop-only layout.

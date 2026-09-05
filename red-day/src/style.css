@@ -940,6 +940,14 @@ body {
   background: var(--gold);
 }
 
+.mandate-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--red-deep);
+}
+
 .screen.brief .maya-row {
   min-height: 0;
 }

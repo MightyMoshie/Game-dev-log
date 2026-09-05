@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { applyMandate, applyPitchDecisions, mandateBroken, pitchCards } from "./pitch";
+import { applyMandate, applyPitchDecisions, mandateBroken, MANDATES, pitchCards } from "./pitch";
 import {
   applyCurriculumUnlock,
   SCAR_COST,
@@ -140,6 +140,11 @@ describe("morning pitch", () => {
 });
 
 describe("mandate roast", () => {
+  it("warns that NO FOMO is hard before Compliance", () => {
+    const m = MANDATES.find((x) => x.id === "NO_FOMO_ADDS");
+    assert.equal(m?.hint, "FOMO fires without Compliance.");
+  });
+
   it("names a broken desk rule after panic, not as a hard fail", () => {
     const roast = pickRoast({
       pnl: -80,

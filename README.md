@@ -2,7 +2,7 @@
 
 Studio home for every game, idea, and version.
 
-Current: **Red Day** (v0 smoke) — a TikTok-scale prop-desk game. You don’t trade. You babysit overconfident trainees and learn risk by surviving them.
+Current: **Red Day** (v0 smoke) — a TikTok-scale prop-desk game. You don’t trade. You approve who sits. Trainees bring the book; you Seat / Reject / Cut size and live with the bruise.
 
 ## Layout
 

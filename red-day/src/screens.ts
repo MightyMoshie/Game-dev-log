@@ -86,9 +86,14 @@ export function pitchScreen(opts: {
       <div class="mandate-row">
         ${MANDATES.map(
           (m) =>
-            `<button type="button" class="chip-btn ${opts.mandate === m.id ? "on" : ""}" data-act="mandate" data-mandate="${m.id}">${escapeHtml(m.label)}</button>`,
+            `<button type="button" class="chip-btn ${opts.mandate === m.id ? "on" : ""}" data-act="mandate" data-mandate="${m.id}" title="${escapeHtml(m.hint)}">${escapeHtml(m.label)}</button>`,
         ).join("")}
       </div>
+      ${
+        opts.mandate
+          ? `<p class="mandate-hint">${escapeHtml(MANDATES.find((m) => m.id === opts.mandate)?.hint ?? "")}</p>`
+          : ""
+      }
       <button class="btn tiny" data-act="mandate" data-mandate="">skip rule</button>
       <button class="btn primary" data-act="floor">OPEN THE FLOOR</button>
       <p class="fine">${opts.seated.length ? `~${Math.round(day.floorMs / 1000)}s floor. Side is theirs.` : "No seats. No tape. Still a day."}</p>
