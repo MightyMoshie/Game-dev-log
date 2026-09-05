@@ -2,12 +2,11 @@
 
 Studio home for every game, idea, and version.
 
-Current: **Red Day** (v0 smoke) — a TikTok-scale prop-desk game. You don’t trade. You babysit overconfident trainees and learn risk by surviving them.
+Current: **Red Day** (v0 smoke) — a TikTok-scale prop-desk game. You don’t trade. You approve who sits. Trainees bring the book; you Seat / Reject / Cut size and live with the bruise.
 
 ## Layout
 
-- `red-day/` — playable smoke (coming next)
-- `log/` — decisions, versions, postmortems
+- `red-day/` — playable v0 smoke (browser). Run it with `cd red-day && npm install && npm run dev`. Details in `red-day/README.md`.
+- `log/` — decisions, versions, postmortems (`log/red-day-v0.md`, `log/red-day-v0-office.md`)
 
 Not financial advice. Paper markets only.
-```
