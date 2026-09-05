@@ -28,11 +28,14 @@ export interface Candle {
 }
 
 export type FomoStyle = "dip" | "chase";
+export type SizeBand = "full" | "half";
+export type Mandate = "NO_FOMO_ADDS" | "HALF_SIZE" | "YANK_GREEN";
 
 export interface SeatSpec {
   id: SeatId;
   name: string;
   size: number;
+  sizeBand?: SizeBand;
   fomoStyle: FomoStyle;
   fomoDelay: number;
   ticker: string;
@@ -81,6 +84,7 @@ export interface LiveBook {
   rode: boolean;
   fomo: boolean;
   addedNotional: number;
+  sizeBand: SizeBand;
   fomoStyle: FomoStyle;
   fomoIndex: number;
   warned: boolean;
@@ -107,6 +111,7 @@ export function seatsFor(
       : accountantHired
         ? MAYA_SIZE_CAPPED
         : MAYA_SIZE,
+    sizeBand: "full",
     fomoStyle: "dip",
     fomoDelay: 0,
     ticker: sheets.maya.ticker,
@@ -125,6 +130,7 @@ export function seatsFor(
       id: "jules",
       name: "Jules",
       size: accountantHired ? JULES_SIZE_CAPPED : JULES_SIZE,
+      sizeBand: "full",
       fomoStyle: "chase",
       fomoDelay: 6,
       ticker: sheets.jules.ticker,
@@ -274,6 +280,7 @@ export function newBook(day: PreparedDay, seat?: SeatSpec, cash?: number): LiveB
     rode: false,
     fomo: false,
     addedNotional: 0,
+    sizeBand: spec.sizeBand ?? "full",
     fomoStyle: spec.fomoStyle,
     fomoIndex: day.fomoIndex + delay,
     warned: false,
@@ -381,7 +388,7 @@ export function blowupTell(book: LiveBook, index: number): string | null {
 export function closeDay(
   day: PreparedDay,
   books: LiveBook | LiveBook[],
-  opts?: { panic?: boolean },
+  opts?: { panic?: boolean; emptyFloor?: boolean; mandateBroken?: boolean },
 ): {
   pnl: number;
   roast: Roast;
@@ -389,6 +396,7 @@ export function closeDay(
 } {
   const list = Array.isArray(books) ? books : [books];
   const last = day.candles.length - 1;
+  const emptyFloor = Boolean(opts?.emptyFloor) || list.length === 0;
   const legs: RoastLeg[] = list.map((book) => ({
     seatId: book.seatId,
     name: book.name,
@@ -398,25 +406,27 @@ export function closeDay(
     fomo: book.fomo,
     recoveredPct: recoveredAfterYank(day, book),
   }));
-  let pnl = legs.reduce((s, l) => s + l.pnl, 0);
+  let pnl = emptyFloor ? 0 : legs.reduce((s, l) => s + l.pnl, 0);
   const panic = Boolean(opts?.panic);
   if (panic) pnl -= panicTax(day.cash);
-  const primary = list[0]!;
+  const primary = list[0];
   const ignoredTell = list.some((b) => b.warned && b.yankedAt == null);
   const roast = pickRoast({
     pnl,
     cash: day.cash,
-    yanked: list.length === 1 ? primary.yankedAt != null : list.every((b) => b.yankedAt != null),
-    yankedAt: primary.yankedAt,
-    candlesLeftAfterYankMove: primary.yankedAt == null ? 0 : last - primary.yankedAt,
+    yanked: !primary ? false : list.length === 1 ? primary.yankedAt != null : list.every((b) => b.yankedAt != null),
+    yankedAt: primary?.yankedAt ?? null,
+    candlesLeftAfterYankMove: !primary || primary.yankedAt == null ? 0 : last - primary.yankedAt,
     rode: list.some((b) => b.rode),
     fomo: list.some((b) => b.fomo),
-    recoveredPct: recoveredAfterYank(day, primary),
+    recoveredPct: primary ? recoveredAfterYank(day, primary) : 0,
     accountantHired: day.hasAccountant,
     espresso: day.espresso,
     research: day.research,
     ignoredTell,
     panic,
+    emptyFloor,
+    mandateBroken: Boolean(opts?.mandateBroken),
     legs,
   });
   return { pnl, roast, legs };

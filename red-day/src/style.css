@@ -268,6 +268,7 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pill {
@@ -284,6 +285,11 @@ body {
   background: var(--gold);
   color: var(--ink);
   border: 3px solid var(--ink);
+}
+
+.pill.scar {
+  background: var(--red);
+  color: var(--foam);
 }
 
 .kicker {
@@ -891,6 +897,43 @@ body {
 
 .screen.brief {
   overflow: auto;
+}
+
+.screen.brief.pitch {
+  gap: 8px;
+}
+
+.screen.brief.pitch .kicker {
+  font-size: 30px;
+}
+
+.pitch-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+}
+
+.mandate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.chip-btn {
+  font-family: Nunito, sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 8px 4px;
+  background: var(--foam);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+
+.chip-btn.on {
+  background: var(--gold);
 }
 
 .screen.brief .maya-row {

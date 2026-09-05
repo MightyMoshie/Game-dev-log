@@ -93,6 +93,8 @@ export function pickRoast(input: {
   research?: boolean;
   ignoredTell?: boolean;
   panic?: boolean;
+  emptyFloor?: boolean;
+  mandateBroken?: boolean;
   legs?: RoastLeg[];
 }): Roast {
   const { pnl, cash, yanked, rode, fomo, recoveredPct, accountantHired } = input;
@@ -108,6 +110,24 @@ export function pickRoast(input: {
       stamp: "HIT THE BIG RED",
       body: "You dumped the whole floor into the aisle. Jumbotron blinked. Paper hands, meet actual hands. The tax is the point. Per-desk yank is the job. This was a fire alarm.",
       lesson: "Panic is a decision with a surcharge. Yank one book at a time.",
+    };
+  }
+
+  if (input.emptyFloor) {
+    return {
+      id: "empty_chairs",
+      stamp: "EMPTY CHAIRS",
+      body: "You approved nobody. The pit hummed without you. Maya drafted a thread from the hallway. Jules updated a sheet that says idle.",
+      lesson: "Rejecting the book is a call. An empty floor still gets a roast.",
+    };
+  }
+
+  if (input.mandateBroken) {
+    return {
+      id: "mandate_broke",
+      stamp: "BROKE YOUR OWN RULE",
+      body: "You posted a desk rule and then watched it die on the jumbotron. The roast is the enforcement. Nobody got fired. Everybody noticed.",
+      lesson: "A mandate you don't yank on is just a sticker.",
     };
   }
 

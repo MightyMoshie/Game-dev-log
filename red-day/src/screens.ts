@@ -2,9 +2,11 @@ import { julesSvg, lockSvg, mayaSvg } from "./art";
 import { DISCLAIMER } from "./copy";
 import type { Roast } from "./copy";
 import { officeMarkup } from "./office";
+import { MANDATES, type PitchCard } from "./pitch";
+import { SCAR_COST } from "./progress";
 import { pitViewFromSave, statStrip } from "./stats";
 import { money, signedMoney, type DeskSave, type UpgradeId } from "./state";
-import type { LiveBook, PreparedDay } from "./sim";
+import type { LiveBook, Mandate, PreparedDay, SeatSpec } from "./sim";
 
 export function bootScreen(existing: DeskSave | null): string {
   const named = existing?.deskName ?? "Paper Hands LLC";
@@ -15,8 +17,8 @@ export function bootScreen(existing: DeskSave | null): string {
         <span class="splat">RED</span>
         <span class="day">DAY</span>
       </div>
-      <p class="tag">You don’t trade. You babysit.</p>
-      <p class="subtag">High-rise voxel floor. You don’t trade. You babysit the jumbotron.</p>
+      <p class="tag">You don’t trade. You approve who sits.</p>
+      <p class="subtag">High-rise voxel floor. You don’t pick the ticker or the side.</p>
       <label class="field">
         <span>Desk name</span>
         <input id="desk-name" maxlength="28" value="${escapeHtml(named)}" autocomplete="off" />
@@ -34,45 +36,98 @@ export function bootScreen(existing: DeskSave | null): string {
 }
 
 export function briefScreen(save: DeskSave, day: PreparedDay): string {
-  const two = day.seat2;
-  const maya = day.seats[0]!;
-  const jules = day.seats[1];
-  return `
-    <section class="screen brief">
+  return pitchScreen({
+    save,
+    day,
+    phase: "pitch",
+    card: {
+      spec: day.seats[0]!,
+      name: day.seats[0]!.name,
+      bias: day.seats[0]!.side === "short" ? "ALWAYS SHORT" : "ALWAYS LONG",
+      ticker: day.seats[0]!.ticker,
+      side: day.seats[0]!.side,
+      sizeBand: day.seats[0]!.sizeBand ?? "full",
+      thesis: day.seats[0]!.take,
+    },
+    forceSeat: day.day <= 1,
+    mandate: null,
+    seated: [],
+    index: 0,
+    total: day.seats.length,
+  });
+}
+
+export function pitchScreen(opts: {
+  save: DeskSave;
+  day: PreparedDay;
+  phase: "pitch" | "gate";
+  card: PitchCard | null;
+  forceSeat: boolean;
+  mandate: Mandate | null;
+  seated: SeatSpec[];
+  index: number;
+  total: number;
+}): string {
+  const { save, day } = opts;
+  if (opts.phase === "gate") {
+    const names = opts.seated.map((s) => s.name).join(" · ") || "nobody";
+    return `
+    <section class="screen brief pitch">
       <header class="topbar">
         <span class="pill">${escapeHtml(save.deskName)}</span>
         <span class="pill alt">DAY ${day.day}</span>
       </header>
-      <p class="kicker">MORNING BRIEF</p>
+      <p class="kicker">DESK RULE</p>
+      <p class="beats">You don’t trade. You approve who sits.</p>
       <article class="headline-card">
-        <div class="badge">${escapeHtml(maya.ticker)} · LONG</div>
-        <h2>${escapeHtml(maya.headline)}</h2>
+        <div class="badge">${escapeHtml(names.toUpperCase())}</div>
+        <h2>${opts.seated.length ? "One optional rule. Break it and we roast you." : "Empty chairs. Open anyway — idle roast incoming."}</h2>
       </article>
-      <div class="maya-row">
-        <div class="portrait">${mayaSvg("hyped")}</div>
+      <div class="mandate-row">
+        ${MANDATES.map(
+          (m) =>
+            `<button class="chip-btn ${opts.mandate === m.id ? "on" : ""}" data-act="mandate" data-mandate="${m.id}">${m.label}</button>`,
+        ).join("")}
+      </div>
+      <button class="btn tiny" data-act="mandate" data-mandate="">skip rule</button>
+      <button class="btn primary" data-act="floor">OPEN THE FLOOR</button>
+      <p class="fine">${opts.seated.length ? `~${Math.round(day.floorMs / 1000)}s floor. Side is theirs.` : "No seats. No tape. Still a day."}</p>
+    </section>`;
+  }
+
+  const card = opts.card!;
+  const side = card.side === "short" ? "SHORT" : "LONG";
+  const portrait = card.spec.id === "jules" ? julesSvg("smug") : mayaSvg("hyped");
+  return `
+    <section class="screen brief pitch">
+      <header class="topbar">
+        <span class="pill">${escapeHtml(save.deskName)}</span>
+        <span class="pill alt">DAY ${day.day} · ${opts.index + 1}/${Math.max(1, opts.total)}</span>
+      </header>
+      <p class="kicker">WHO SITS</p>
+      <p class="beats">You don’t trade. You approve who sits.</p>
+      <article class="headline-card">
+        <div class="badge ${card.side === "short" ? "short" : ""}">${escapeHtml(card.ticker)} · ${side}</div>
+        <p class="who">${escapeHtml(card.bias)} · ${escapeHtml(card.sizeBand.toUpperCase())} SIZE</p>
+        <h2>${escapeHtml(card.spec.headline)}</h2>
+      </article>
+      <div class="maya-row compact">
+        <div class="portrait sm">${portrait}</div>
         <div class="bubble">
-          <p class="who">MAYA · SEAT 1 · LONG ${escapeHtml(maya.ticker)}</p>
-          <p>${escapeHtml(maya.take)}</p>
+          <p class="who">${escapeHtml(card.name.toUpperCase())} · ${side} ${escapeHtml(card.ticker)}</p>
+          <p>${escapeHtml(card.thesis)}</p>
         </div>
       </div>
+      <p class="beats">Their book. You cannot flip the side.</p>
+      <div class="pitch-actions">
+        <button class="btn gold" data-act="cut">CUT SIZE</button>
+        <button class="btn primary" data-act="seat">SEAT</button>
+      </div>
       ${
-        two && jules
-          ? `<article class="headline-card">
-              <div class="badge short">${escapeHtml(jules.ticker)} · SHORT</div>
-              <h2>${escapeHtml(jules.headline)}</h2>
-            </article>
-            <div class="maya-row">
-              <div class="portrait">${julesSvg("smug")}</div>
-              <div class="bubble">
-                <p class="who">JULES · SEAT 2 · SHORT ${escapeHtml(jules.ticker)}</p>
-                <p>${escapeHtml(jules.take)}</p>
-              </div>
-            </div>`
-          : ""
+        opts.forceSeat
+          ? `<p class="fine">Day 1: seat someone. Reject is locked.</p>`
+          : `<button class="btn ghost" data-act="reject">REJECT</button>`
       }
-      <p class="beats">Sheets are premade. You don’t pick the ticker or the side.</p>
-      <button class="btn primary" data-act="floor">OPEN THE FLOOR</button>
-      <p class="fine">${two ? "Tap a desk or jumbotron tile. Yank one, the other stays glued." : `~${Math.round(day.floorMs / 1000)} seconds. Yank rips them off the chair.`}</p>
     </section>
   `;
 }
@@ -130,7 +185,7 @@ export function bellScreen(opts: {
         <p class="tags">${escapeHtml(tags || (opts.yanked ? "YANKED" : "HELD"))}</p>
         <p class="card-disc">${DISCLAIMER}</p>
       </article>
-      <button class="btn fake" data-act="ad" disabled title="Placeholder. No ads in v0.">▶ Watch to replay the day</button>
+      <button class="btn fake" data-act="ad" disabled title="Placeholder. No ads in v0.">Coming · Watch to replay</button>
       <p class="fake-note">Ad placeholder · not hooked up · never real money</p>
       <button class="btn primary" data-act="desk">BACK TO THE DESK</button>
     </section>
@@ -149,24 +204,28 @@ export function deskScreen(
   const e = save.upgradeEspresso;
   const r = save.upgradeResearch;
   const view = pitViewFromSave(save);
+  const broke = shop && save.scars < SCAR_COST;
   const kit = (id: "compliance" | "espresso" | "research", title: string, blurb: string, placed: boolean) => `
     <article class="kit-card ${shop ? "" : "locked"}">
       <div>
         <h3>${title}</h3>
-        <p>${!shop ? "Unlocks after the first real red day." : placed ? blurb : "One item, whole floor. Watch the chip."}</p>
+        <p>${!shop ? "Opens Day 3, or after your first real red day. Spend Scars." : placed ? blurb : `One item, whole floor. Costs ${SCAR_COST} Scars.`}</p>
       </div>
       ${
         !shop
           ? `<span class="chip">LOCKED</span>`
           : placed
             ? `<span class="chip">PLACED</span>`
-            : `<button class="btn gold sm" data-act="upgrade" data-upgrade="${id}">PLACE</button>`
+            : broke
+              ? `<span class="chip">NEED ${SCAR_COST} SCARS</span>`
+              : `<button class="btn gold sm" data-act="upgrade" data-upgrade="${id}">PLACE · ${SCAR_COST} SCARS</button>`
       }
     </article>`;
   return `
     <section class="screen desk">
       <header class="topbar">
         <span class="pill">${escapeHtml(save.deskName)}</span>
+        <span class="pill scar">SCARS ${save.scars}</span>
         <span class="pill alt">DAY ${Math.max(1, save.day - 1)} DONE</span>
       </header>
       <div class="cash-hero">
@@ -174,7 +233,7 @@ export function deskScreen(
         <p class="cash">${money(save.cash)}</p>
         ${lastPnl == null ? "" : `<p class="last ${lastPnl < 0 ? "down" : "up"}">last print ${signedMoney(lastPnl)}</p>`}
       </div>
-      ${justUnlocked ? `<p class="unlock-banner">First Red Day. Jules took seat 2. Place 3 floor upgrades — each hits EVERYONE.</p>` : ""}
+      ${justUnlocked ? `<p class="unlock-banner">Jules took seat 2. Shop is open. Starter Scars: 2. Each upgrade hits EVERYONE.</p>` : ""}
       ${statStrip(view, { tone: "desk", flash: justPlaced })}
       <p class="kicker kit-kicker">FLOOR KIT</p>
       ${kit("compliance", "Compliance posters", `${view.sizeText} size · drip on. Whole floor.`, c)}
@@ -196,12 +255,12 @@ export function deskScreen(
             ${
               seat2
                 ? `<p>Shorts strength. Fades green.</p><span class="chip teal">SEAT 2 · SHORT</span>`
-                : `<p>Unlocks after the first red day.</p><span class="chip">LOCKED</span>`
+                : `<p>Opens Day 3, or after your first real red day.</p><span class="chip">LOCKED</span>`
             }
           </div>
         </article>
       </div>
-      <button class="btn primary" data-act="nextday">NEXT MORNING BRIEF</button>
+      <button class="btn primary" data-act="nextday">NEXT OPEN — WHO SITS</button>
       <button class="btn tiny" data-act="title">title screen</button>
     </section>
   `;

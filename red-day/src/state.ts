@@ -49,6 +49,7 @@ export interface DeskSave {
   upgradeCompliance: boolean;
   upgradeEspresso: boolean;
   upgradeResearch: boolean;
+  scars: number;
   redDays: number;
   bestDay: number;
   worstDay: number;
@@ -77,6 +78,7 @@ export function newDesk(deskName: string): DeskSave {
     upgradeCompliance: false,
     upgradeEspresso: false,
     upgradeResearch: false,
+    scars: 0,
     redDays: 0,
     bestDay: 0,
     worstDay: 0,
@@ -106,6 +108,12 @@ export function loadSave(): DeskSave | null {
       upgradeCompliance: compliance,
       upgradeEspresso: Boolean(parsed.upgradeEspresso),
       upgradeResearch: Boolean(parsed.upgradeResearch),
+      scars:
+        typeof parsed.scars === "number"
+          ? Math.max(0, Math.floor(parsed.scars))
+          : parsed.hasSeat2 || parsed.hasUpgrades || hasAccountant
+            ? 2
+            : 0,
       redDays: parsed.redDays ?? 0,
       bestDay: parsed.bestDay ?? 0,
       worstDay: parsed.worstDay ?? 0,

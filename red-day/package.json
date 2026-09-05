@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "tsx --test src/sim.test.ts src/rng.test.ts src/quotes.test.ts"
+    "test": "tsx --test src/sim.test.ts src/rng.test.ts src/quotes.test.ts src/progress.test.ts"
   },
   "devDependencies": {
     "@types/three": "^0.185.4",

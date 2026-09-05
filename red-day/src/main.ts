@@ -5,11 +5,20 @@ import { BANKS, Talker, type SeatId } from "./quotes";
 import { poseFor } from "./office";
 import { VoxelOffice } from "./voxel";
 import {
+  applyMandate,
+  applyPitchDecisions,
+  mandateBroken,
+  pitchCards,
+  type PitchCard,
+  type PitchDecision,
+} from "./pitch";
+import { applyCurriculumUnlock, isRealRedDay, scarsEarned, tryBuyUpgrade } from "./progress";
+import {
   bellScreen,
-  briefScreen,
   bootScreen,
   deskScreen,
   floorScreen,
+  pitchScreen,
   setBubble,
 } from "./screens";
 import {
@@ -18,11 +27,13 @@ import {
   closeDay,
   maybeIdleFomo,
   newBooks,
+  recoveredAfterYank,
   tryRide,
   tryYank,
   tryYankAll,
   unrealized,
   type LiveBook,
+  type Mandate,
   type PreparedDay,
 } from "./sim";
 import {
@@ -55,6 +66,10 @@ class RedDay {
   private lastHrAt = 0;
   private lastYankId: string | null = null;
   private panicked = false;
+  private pitchList: PitchCard[] = [];
+  private pitchIndex = 0;
+  private pitchDecisions: Record<string, PitchDecision> = {};
+  private mandate: Mandate | null = null;
   private talkers = new Map<string, Talker>();
   private voxel: VoxelOffice | null = null;
 
@@ -77,6 +92,13 @@ class RedDay {
     else if (act === "continue") this.openDesk(true);
     else if (act === "reset") this.reset();
     else if (act === "floor") this.openFloor();
+    else if (act === "seat") this.decidePitch("seat");
+    else if (act === "cut") this.decidePitch("cut");
+    else if (act === "reject") this.decidePitch("reject");
+    else if (act === "mandate") {
+      const id = btn.getAttribute("data-mandate");
+      this.pickMandate(id === "NO_FOMO_ADDS" || id === "HALF_SIZE" || id === "YANK_GREEN" ? id : null);
+    }
     else if (act === "ride") this.ride();
     else if (act === "yank") this.yank();
     else if (act === "panic") this.panic();
@@ -137,7 +159,12 @@ class RedDay {
 
   private startBrief(): void {
     if (!this.save) return;
-    this.justUnlocked = false;
+    if (applyCurriculumUnlock(this.save)) {
+      this.justUnlocked = true;
+      writeSave(this.save);
+    } else {
+      this.justUnlocked = false;
+    }
     this.day = buildDay({
       runSeed: this.save.runSeed,
       day: this.save.day,
@@ -146,13 +173,77 @@ class RedDay {
       seat2: this.save.hasSeat2,
       upgrades: upgradesFrom(this.save),
     });
-    this.books = newBooks(this.day, this.save.cash);
+    this.books = [];
     this.selected = "maya";
-    this.root.innerHTML = briefScreen(this.save, this.day);
+    this.pitchList = pitchCards(this.day.seats);
+    this.pitchIndex = 0;
+    this.pitchDecisions = {};
+    this.mandate = null;
+    this.renderPitch();
+  }
+
+  private seatedSpecs() {
+    if (!this.save || !this.day) return [];
+    return applyMandate(
+      applyPitchDecisions(this.day.seats, this.pitchDecisions, this.save.day),
+      this.mandate,
+    );
+  }
+
+  private renderPitch(): void {
+    if (!this.save || !this.day) return;
+    const total = this.pitchList.length;
+    if (this.pitchIndex < total) {
+      this.root.innerHTML = pitchScreen({
+        save: this.save,
+        day: this.day,
+        phase: "pitch",
+        card: this.pitchList[this.pitchIndex]!,
+        forceSeat: this.save.day <= 1,
+        mandate: this.mandate,
+        seated: this.seatedSpecs(),
+        index: this.pitchIndex,
+        total,
+      });
+      return;
+    }
+    this.root.innerHTML = pitchScreen({
+      save: this.save,
+      day: this.day,
+      phase: "gate",
+      card: null,
+      forceSeat: this.save.day <= 1,
+      mandate: this.mandate,
+      seated: this.seatedSpecs(),
+      index: total,
+      total,
+    });
+  }
+
+  private decidePitch(decision: PitchDecision): void {
+    if (!this.save || !this.day) return;
+    const card = this.pitchList[this.pitchIndex];
+    if (!card) return;
+    if (decision === "reject" && this.save.day <= 1) return;
+    this.pitchDecisions[card.spec.id] = decision;
+    this.pitchIndex += 1;
+    this.renderPitch();
+  }
+
+  private pickMandate(id: Mandate | null): void {
+    this.mandate = this.mandate === id ? null : id;
+    this.renderPitch();
   }
 
   private openFloor(): void {
     if (!this.save || !this.day) return;
+    this.day.seats = this.seatedSpecs();
+    this.books = newBooks(this.day, this.save.cash);
+    this.selected = this.books[0]?.seatId ?? "maya";
+    if (!this.books.length) {
+      this.finishEmptyDay();
+      return;
+    }
     this.voxel?.dispose();
     this.voxel = null;
     this.root.innerHTML = floorScreen(this.save, this.day);
@@ -379,25 +470,38 @@ class RedDay {
     window.setTimeout(() => pos.classList.remove("flash"), 500);
   }
 
+  private finishEmptyDay(): void {
+    if (!this.save || !this.day) return;
+    this.panicked = false;
+    const { pnl, roast } = closeDay(this.day, [], { emptyFloor: true });
+    this.settleDay(pnl, roast);
+  }
+
   private finishDay(): void {
     this.stopFloor();
     if (!this.save || !this.day) return;
+    const last = this.day.candles.length - 1;
+    const pnls = this.books.map((b) => unrealized(this.day!, b, last));
+    const broke = mandateBroken(this.mandate, this.books, pnls);
+    const { pnl, roast } = closeDay(this.day, this.books, {
+      panic: this.panicked,
+      mandateBroken: broke,
+    });
+    this.settleDay(pnl, roast);
+  }
+
+  private settleDay(pnl: number, roast: ReturnType<typeof closeDay>["roast"]): void {
+    if (!this.save || !this.day) return;
     audio.bell();
-    const { pnl, roast } = closeDay(this.day, this.books, { panic: this.panicked });
     this.lastPnl = pnl;
     this.save.cash = Math.round(this.save.cash + pnl);
     this.save.bestDay = Math.max(this.save.bestDay, pnl);
     this.save.worstDay = Math.min(this.save.worstDay, pnl);
-    if (pnl < -25) {
-      this.save.redDays += 1;
-      if (!this.save.hasAccountant || !this.save.hasSeat2) {
-        this.save.hasAccountant = true;
-        this.save.hasSeat2 = true;
-        this.save.hasUpgrades = true;
-        this.justUnlocked = true;
-      }
-    }
     this.save.day += 1;
+    const recoveredYank = this.books.some((b) => recoveredAfterYank(this.day!, b) > 0);
+    this.save.scars += scarsEarned({ pnl, recoveredYank, panic: this.panicked });
+    if (isRealRedDay(pnl)) this.save.redDays += 1;
+    this.justUnlocked = applyCurriculumUnlock(this.save, pnl);
     writeSave(this.save);
     this.root.innerHTML = bellScreen({
       save: this.save,
@@ -431,16 +535,16 @@ class RedDay {
 
   private showDesk(): void {
     if (!this.save) return;
+    if (applyCurriculumUnlock(this.save)) {
+      this.justUnlocked = true;
+      writeSave(this.save);
+    }
     this.root.innerHTML = deskScreen(this.save, this.lastPnl, this.justUnlocked);
   }
 
   private placeUpgrade(id: UpgradeId): void {
-    if (!this.save || !this.save.hasUpgrades) return;
-    if (id === "compliance") {
-      this.save.upgradeCompliance = true;
-      this.save.accountantHired = true;
-    } else if (id === "espresso") this.save.upgradeEspresso = true;
-    else this.save.upgradeResearch = true;
+    if (!this.save) return;
+    if (!tryBuyUpgrade(this.save, id)) return;
     writeSave(this.save);
     this.justUnlocked = false;
     this.root.innerHTML = deskScreen(this.save, this.lastPnl, false, id);
