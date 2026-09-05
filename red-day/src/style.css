@@ -921,15 +921,19 @@ body {
 
 .chip-btn {
   font-family: Nunito, sans-serif;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.04em;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: var(--ink);
   border: 3px solid var(--ink);
   border-radius: 12px;
-  padding: 8px 4px;
+  padding: 10px 6px;
+  min-height: 52px;
   background: var(--foam);
   box-shadow: 3px 3px 0 var(--ink);
   cursor: pointer;
+  white-space: normal;
 }
 
 .chip-btn.on {

@@ -86,7 +86,7 @@ export function pitchScreen(opts: {
       <div class="mandate-row">
         ${MANDATES.map(
           (m) =>
-            `<button class="chip-btn ${opts.mandate === m.id ? "on" : ""}" data-act="mandate" data-mandate="${m.id}">${m.label}</button>`,
+            `<button type="button" class="chip-btn ${opts.mandate === m.id ? "on" : ""}" data-act="mandate" data-mandate="${m.id}">${escapeHtml(m.label)}</button>`,
         ).join("")}
       </div>
       <button class="btn tiny" data-act="mandate" data-mandate="">skip rule</button>

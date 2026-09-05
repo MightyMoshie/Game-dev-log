@@ -13,7 +13,7 @@ export type PitchCard = {
 };
 
 export const MANDATES: { id: Mandate; label: string; hint: string }[] = [
-  { id: "NO_FOMO_ADDS", label: "NO FOMO ADDS", hint: "No chase adds." },
+  { id: "NO_FOMO_ADDS", label: "NO FOMO", hint: "No chase adds." },
   { id: "HALF_SIZE", label: "HALF SIZE", hint: "Keep books small." },
   { id: "YANK_GREEN", label: "YANK GREEN", hint: "Don't let winners sit." },
 ];
